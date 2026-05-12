@@ -11,6 +11,13 @@ async def connect_db():
     """Conectar a MongoDB"""
     db.client = AsyncClient(settings.mongodb_url)
     db.db = db.client[settings.mongodb_db]
+    
+    # Crear índices
+    await db.db.usuarios.create_index("email", unique=True)
+    await db.db.tickets.create_index("usuario_id")
+    await db.db.tickets.create_index("asignado_a")
+    await db.db.tickets.create_index("estado")
+    
     print(f"✓ Conectado a MongoDB: {settings.mongodb_url}/{settings.mongodb_db}")
 
 async def close_db():
