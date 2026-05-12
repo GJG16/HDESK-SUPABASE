@@ -1,0 +1,66 @@
+<div class="dashboard">
+  <nav class="navbar">
+    <div class="navbar-content">
+      <h1 class="navbar-title">🎟️ Helpdesk</h1>
+      <div class="navbar-menu">
+        <button (click)="navigateTo('/usuarios')" class="btn-nav">Usuarios</button>
+        <button (click)="navigateTo('/tickets')" class="btn-nav">Tickets</button>
+        <span class="user-info">{{ currentUser?.nombre }}</span>
+        <button (click)="logout()" class="btn-logout">Logout</button>
+      </div>
+    </div>
+  </nav>
+
+  <div class="dashboard-content">
+    <h2>Bienvenido, {{ currentUser?.nombre }}</h2>
+
+    <div class="stats-grid">
+      <div class="stat-card">
+        <h3>Total Tickets</h3>
+        <p class="stat-value">{{ stats.total }}</p>
+      </div>
+      <div class="stat-card">
+        <h3>Abiertos</h3>
+        <p class="stat-value abiertos">{{ stats.abiertos }}</p>
+      </div>
+      <div class="stat-card">
+        <h3>En Progreso</h3>
+        <p class="stat-value en-progreso">{{ stats.en_progreso }}</p>
+      </div>
+      <div class="stat-card">
+        <h3>Resueltos</h3>
+        <p class="stat-value resueltos">{{ stats.resueltos }}</p>
+      </div>
+    </div>
+
+    <div class="recent-tickets">
+      <h3>Tickets Recientes</h3>
+      <div *ngIf="loading" class="loading">Cargando...</div>
+      <div *ngIf="!loading && tickets.length > 0" class="tickets-table">
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Título</th>
+              <th>Estado</th>
+              <th>Prioridad</th>
+              <th>Fecha</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let ticket of tickets" [attr.data-estado]="ticket.estado">
+              <td>#{{ ticket.id?.substring(0, 6) }}</td>
+              <td>{{ ticket.titulo }}</td>
+              <td><span class="badge" [attr.data-state]="ticket.estado">{{ ticket.estado }}</span></td>
+              <td><span class="badge" [attr.data-priority]="ticket.prioridad">{{ ticket.prioridad }}</span></td>
+              <td>{{ ticket.fecha_creacion | date: 'short' }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div *ngIf="!loading && tickets.length === 0" class="empty-state">
+        No hay tickets disponibles
+      </div>
+    </div>
+  </div>
+</div>
