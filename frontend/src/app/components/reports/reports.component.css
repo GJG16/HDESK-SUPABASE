@@ -114,8 +114,34 @@ h1 {
   padding: 1.25rem;
 }
 
+.panel-headline {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: flex-start;
+  margin-bottom: 1rem;
+}
+
+.section-kicker {
+  margin: 0 0 0.25rem;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #64748b;
+  font-weight: 700;
+}
+
+.btn-secondary.mini {
+  padding: 0.65rem 0.85rem;
+  border-radius: 12px;
+}
+
 .full-width {
   grid-column: 1 / -1;
+}
+
+.audit-panel {
+  background: linear-gradient(180deg, rgba(15, 23, 42, 0.02), rgba(255, 255, 255, 0.95));
 }
 
 h2 {
@@ -171,6 +197,73 @@ th {
   letter-spacing: 0.04em;
 }
 
+.audit-state {
+  padding: 1rem 0.25rem 0.25rem;
+  color: #475569;
+}
+
+.audit-state.empty {
+  color: #94a3b8;
+}
+
+.audit-list {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.audit-item {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.9rem;
+  padding: 0.95rem 0;
+  border-top: 1px solid #e2e8f0;
+}
+
+.audit-icon {
+  width: 2.4rem;
+  height: 2.4rem;
+  border-radius: 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  color: #fff;
+  background: #dc2626;
+}
+
+.audit-icon[data-action="delete_ticket"] {
+  background: linear-gradient(135deg, #f59e0b 0%, #dc2626 100%);
+}
+
+.audit-icon[data-action="delete_user"] {
+  background: linear-gradient(135deg, #0f172a 0%, #334155 100%);
+}
+
+.audit-body {
+  min-width: 0;
+}
+
+.audit-topline {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: baseline;
+}
+
+.audit-topline strong {
+  color: #0f172a;
+}
+
+.audit-topline span,
+.audit-body small {
+  color: #64748b;
+}
+
+.audit-body p {
+  margin: 0.35rem 0;
+  color: #334155;
+}
+
 @media (max-width: 900px) {
   .reports-topbar {
     flex-direction: column;
@@ -178,5 +271,10 @@ th {
 
   .content-grid {
     grid-template-columns: 1fr;
+  }
+
+  .panel-headline,
+  .audit-topline {
+    flex-direction: column;
   }
 }

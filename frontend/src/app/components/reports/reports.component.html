@@ -52,5 +52,39 @@
         </tbody>
       </table>
     </article>
+
+    <article class="panel full-width audit-panel">
+      <div class="panel-headline">
+        <div>
+          <p class="section-kicker">Auditoría</p>
+          <h2>Eventos recientes</h2>
+        </div>
+        <button class="btn-secondary mini" (click)="loadAuditLogs()">Actualizar</button>
+      </div>
+
+      <div *ngIf="auditLoading" class="audit-state">Cargando auditoría...</div>
+      <div *ngIf="!auditLoading && auditLogs.length === 0" class="audit-state empty">
+        No hay eventos de auditoría recientes.
+      </div>
+
+      <div *ngIf="!auditLoading && auditLogs.length > 0" class="audit-list">
+        <article class="audit-item" *ngFor="let log of auditLogs">
+          <div class="audit-icon" [attr.data-action]="log.action">{{ log.action === 'delete_ticket' ? 'T' : 'U' }}</div>
+          <div class="audit-body">
+            <div class="audit-topline">
+              <strong>{{ formatAction(log.action) }}</strong>
+              <span>{{ log.created_at | date: 'short' }}</span>
+            </div>
+            <p>
+              <span *ngIf="log.actor_admin_nombre; else actorFallback">{{ log.actor_admin_nombre }}</span>
+              <ng-template #actorFallback>{{ log.actor_admin_id }}</ng-template>
+              <span>sobre</span>
+              <strong>{{ formatResource(log) }}</strong>
+            </p>
+            <small>{{ log.resource_type | titlecase }} · {{ log.resource_id }}</small>
+          </div>
+        </article>
+      </div>
+    </article>
   </section>
 </div>

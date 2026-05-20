@@ -105,6 +105,8 @@ class AuditLog(BaseModel):
     resource_type: str
     resource_id: str
     actor_admin_id: str
+    actor_admin_nombre: Optional[str] = None
+    resource_label: Optional[str] = None
     created_at: Optional[datetime] = None
 
 

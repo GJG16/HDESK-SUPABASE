@@ -97,6 +97,11 @@ export class KanbanComponent implements OnInit {
       return;
     }
 
+    if (this.authService.isAgent() && ticket.asignado_a !== this.currentUser?.id) {
+      this.error = 'Primero debes asignarte el ticket antes de moverlo';
+      return;
+    }
+
     const payload: Partial<Ticket> = { estado: targetState };
     if (this.authService.isAgent() && ticket.asignado_a !== this.currentUser?.id) {
       payload.asignado_a = this.currentUser?.id;
@@ -124,7 +129,7 @@ export class KanbanComponent implements OnInit {
   }
 
   canDrag(ticket: Ticket): boolean {
-    return this.authService.isAdmin() || this.authService.isAgent();
+    return this.authService.isAdmin() || ticket.asignado_a === this.currentUser?.id;
   }
 
   canSelfAssign(ticket: Ticket): boolean {
@@ -133,6 +138,40 @@ export class KanbanComponent implements OnInit {
 
   navigateToDashboard(): void {
     this.router.navigate(['/dashboard']);
+  }
+
+  getAssigneeLabel(ticket: Ticket): string {
+    if (!ticket.asignado_a) {
+      return 'Sin asignar';
+    }
+
+    if (ticket.asignado_a === this.currentUser?.id) {
+      return 'Asignado a mí';
+    }
+
+    return `Asignado: ${ticket.asignado_a.substring(0, 6)}`;
+  }
+
+  getStateLabel(state: Ticket['estado']): string {
+    const labels: Record<Ticket['estado'], string> = {
+      abierto: 'Pendientes',
+      en_progreso: 'En curso',
+      resuelto: 'Resueltos',
+      cerrado: 'Cerrados',
+    };
+
+    return labels[state];
+  }
+
+  getPriorityLabel(ticket: Ticket): string {
+    const labels: Record<Ticket['prioridad'], string> = {
+      baja: 'Baja prioridad',
+      media: 'Prioridad media',
+      alta: 'Alta prioridad',
+      critica: 'Crítica',
+    };
+
+    return labels[ticket.prioridad];
   }
 
   isAdmin(): boolean {

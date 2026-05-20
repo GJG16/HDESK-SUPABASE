@@ -3,6 +3,7 @@ import { Component, OnInit } from '@angular/core';
 import { Router, RouterModule } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 import { TicketService } from '../../services/ticket.service';
+import { AuditLog } from '../../models';
 
 interface TicketReportByState {
   estado: string;
@@ -29,7 +30,9 @@ interface TicketReport {
 })
 export class ReportsComponent implements OnInit {
   loading = true;
+  auditLoading = true;
   report: TicketReport | null = null;
+  auditLogs: AuditLog[] = [];
   error = '';
 
   constructor(
@@ -45,6 +48,7 @@ export class ReportsComponent implements OnInit {
     }
 
     this.loadReport();
+    this.loadAuditLogs();
   }
 
   loadReport(): void {
@@ -57,6 +61,20 @@ export class ReportsComponent implements OnInit {
       error: (error) => {
         this.error = error.error?.detail || 'No fue posible cargar el reporte';
         this.loading = false;
+      }
+    });
+  }
+
+  loadAuditLogs(): void {
+    this.auditLoading = true;
+    this.ticketService.getAuditLogs(8).subscribe({
+      next: (logs) => {
+        this.auditLogs = logs;
+        this.auditLoading = false;
+      },
+      error: (error) => {
+        this.error = error.error?.detail || 'No fue posible cargar la auditoría';
+        this.auditLoading = false;
       }
     });
   }
@@ -77,5 +95,17 @@ export class ReportsComponent implements OnInit {
 
   navigateToDashboard(): void {
     this.router.navigate(['/dashboard']);
+  }
+
+  formatAction(action: AuditLog['action']): string {
+    return action === 'delete_user' ? 'Eliminó usuario' : 'Eliminó ticket';
+  }
+
+  formatResource(log: AuditLog): string {
+    if (log.resource_type === 'ticket') {
+      return log.resource_label || log.resource_id;
+    }
+
+    return log.resource_label || log.resource_id;
   }
 }

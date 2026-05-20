@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { Ticket, TicketFilter, TicketReport } from '../models';
+import { AuditLog, Ticket, TicketFilter, TicketReport } from '../models';
 
 @Injectable({
   providedIn: 'root'
@@ -58,6 +58,13 @@ export class TicketService {
    */
   getTicketReports(): Observable<TicketReport> {
     return this.http.get<TicketReport>(`${this.apiUrl}/reports/tickets`);
+  }
+
+  /**
+   * Obtener feed reciente de auditoría
+   */
+  getAuditLogs(limit = 10): Observable<AuditLog[]> {
+    return this.http.get<AuditLog[]>(`${this.apiUrl}/reports/audit?limit=${limit}`);
   }
 
   /**

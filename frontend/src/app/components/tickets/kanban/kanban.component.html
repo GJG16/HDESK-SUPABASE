@@ -17,33 +17,46 @@
     <article
       class="column"
       *ngFor="let column of columns"
+      [attr.data-state]="column.key"
       (dragover)="allowDrop($event)"
       (drop)="drop($event, column.key)"
     >
       <div class="column-header">
-        <h2>{{ column.label }}</h2>
+        <div>
+          <p class="column-kicker">{{ getStateLabel(column.key) }}</p>
+          <h2>{{ column.label }}</h2>
+        </div>
         <span class="counter">{{ column.tickets.length }}</span>
       </div>
 
+      <p class="column-hint">{{ column.key === 'abierto' ? 'Recién creados o por tomar' : 'Arrastra solo si tienes permiso' }}</p>
+
       <div class="column-body">
+        <div *ngIf="column.tickets.length === 0" class="empty-column">
+          No hay tickets en esta columna.
+        </div>
         <div
           *ngFor="let ticket of column.tickets"
           class="card"
-          draggable="true"
+          [attr.data-priority]="ticket.prioridad"
+          [class.is-draggable]="canDrag(ticket)"
+          [attr.draggable]="canDrag(ticket)"
           (dragstart)="dragStart($event, ticket)"
         >
           <div class="card-top">
             <strong>{{ ticket.titulo }}</strong>
-            <span class="priority" [attr.data-priority]="ticket.prioridad">{{ ticket.prioridad }}</span>
+            <span class="priority" [attr.data-priority]="ticket.prioridad">{{ getPriorityLabel(ticket) }}</span>
           </div>
           <p>{{ ticket.descripcion }}</p>
           <div class="card-meta">
             <span>#{{ ticket.id?.substring(0, 6) }}</span>
+            <span>{{ getAssigneeLabel(ticket) }}</span>
             <span>Solicitante: {{ ticket.usuario_id.substring(0, 6) }}</span>
           </div>
           <div class="card-actions">
-            <button *ngIf="canSelfAssign(ticket)" (click)="assignToMe(ticket)" class="btn-mini">Asignarme</button>
-            <span class="drag-hint" *ngIf="canDrag(ticket)">Arrastrar para mover</span>
+            <button *ngIf="canSelfAssign(ticket)" (click)="assignToMe(ticket)" class="btn-mini">Tomar ticket</button>
+            <span class="drag-hint" *ngIf="canDrag(ticket)">Listo para mover</span>
+            <span class="drag-hint muted" *ngIf="!canDrag(ticket)">Solo lectura hasta asignación</span>
           </div>
         </div>
       </div>

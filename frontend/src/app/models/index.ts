@@ -45,6 +45,8 @@ export interface AuditLog {
   resource_type: 'user' | 'ticket';
   resource_id: string;
   actor_admin_id: string;
+  actor_admin_nombre?: string;
+  resource_label?: string;
   created_at?: Date;
 }
 
