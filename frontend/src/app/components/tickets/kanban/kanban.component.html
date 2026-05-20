@@ -1,0 +1,52 @@
+<div class="kanban-shell">
+  <header class="kanban-topbar">
+    <div>
+      <p class="eyebrow">Gestión ágil</p>
+      <h1>Tablero Kanban</h1>
+      <p class="subtitle">Arrastra tickets entre columnas o usa acciones rápidas para actualizar MongoDB.</p>
+    </div>
+    <div class="actions">
+      <button class="btn-secondary" (click)="navigateToDashboard()">Dashboard</button>
+    </div>
+  </header>
+
+  <section *ngIf="loading" class="state-card">Cargando tablero...</section>
+  <section *ngIf="error" class="state-card error">{{ error }}</section>
+
+  <section *ngIf="!loading && !error" class="board-grid">
+    <article
+      class="column"
+      *ngFor="let column of columns"
+      (dragover)="allowDrop($event)"
+      (drop)="drop($event, column.key)"
+    >
+      <div class="column-header">
+        <h2>{{ column.label }}</h2>
+        <span class="counter">{{ column.tickets.length }}</span>
+      </div>
+
+      <div class="column-body">
+        <div
+          *ngFor="let ticket of column.tickets"
+          class="card"
+          draggable="true"
+          (dragstart)="dragStart($event, ticket)"
+        >
+          <div class="card-top">
+            <strong>{{ ticket.titulo }}</strong>
+            <span class="priority" [attr.data-priority]="ticket.prioridad">{{ ticket.prioridad }}</span>
+          </div>
+          <p>{{ ticket.descripcion }}</p>
+          <div class="card-meta">
+            <span>#{{ ticket.id?.substring(0, 6) }}</span>
+            <span>Solicitante: {{ ticket.usuario_id.substring(0, 6) }}</span>
+          </div>
+          <div class="card-actions">
+            <button *ngIf="canSelfAssign(ticket)" (click)="assignToMe(ticket)" class="btn-mini">Asignarme</button>
+            <span class="drag-hint" *ngIf="canDrag(ticket)">Arrastrar para mover</span>
+          </div>
+        </div>
+      </div>
+    </article>
+  </section>
+</div>

@@ -2,9 +2,9 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
-import { TicketService } from '../../services/ticket.service';
-import { Ticket, TicketStatus } from '../../models';
-import { AuthService } from '../../services/auth.service';
+import { TicketService } from '../../../services/ticket.service';
+import { Ticket, TicketStatus, User } from '../../../models';
+import { AuthService } from '../../../services/auth.service';
 
 @Component({
   selector: 'app-tickets-list',
@@ -20,12 +20,15 @@ export class TicketsListComponent implements OnInit {
   filterEstado = '';
   filterPrioridad = '';
   searchTerm = '';
+  currentUser: User | null = null;
 
   constructor(
     private ticketService: TicketService,
     private authService: AuthService,
     private router: Router
-  ) {}
+  ) {
+    this.currentUser = this.authService.getCurrentUser();
+  }
 
   ngOnInit(): void {
     this.loadTickets();
@@ -75,6 +78,39 @@ export class TicketsListComponent implements OnInit {
     }
   }
 
+  assignToMe(ticket: Ticket): void {
+    if (!ticket.id || !this.currentUser?.id) return;
+
+    this.ticketService.updateTicket(ticket.id, { asignado_a: this.currentUser.id }).subscribe({
+      next: () => this.loadTickets(),
+      error: () => alert('No fue posible asignar el ticket')
+    });
+  }
+
+  canEditTicket(ticket: Ticket): boolean {
+    if (!this.currentUser) {
+      return false;
+    }
+
+    if (this.authService.isAdmin()) {
+      return true;
+    }
+
+    if (this.authService.isAgent()) {
+      return ticket.asignado_a === this.currentUser.id;
+    }
+
+    return ticket.usuario_id === this.currentUser.id;
+  }
+
+  canDeleteTicket(ticket: Ticket): boolean {
+    return this.authService.isAdmin();
+  }
+
+  canSelfAssign(ticket: Ticket): boolean {
+    return !!this.currentUser && this.authService.isAgent() && ticket.asignado_a !== this.currentUser.id;
+  }
+
   editTicket(id: string | undefined): void {
     if (id) {
       this.router.navigate(['/tickets', id, 'edit']);
@@ -92,5 +128,17 @@ export class TicketsListComponent implements OnInit {
   logout(): void {
     this.authService.logout();
     this.router.navigate(['/login']);
+  }
+
+  isAdmin(): boolean {
+    return this.authService.isAdmin();
+  }
+
+  isAgent(): boolean {
+    return this.authService.isAgent();
+  }
+
+  goToKanban(): void {
+    this.router.navigate(['/tickets/kanban']);
   }
 }

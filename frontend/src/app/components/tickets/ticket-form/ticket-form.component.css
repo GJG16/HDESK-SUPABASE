@@ -60,6 +60,10 @@ form {
   box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
 }
 
+.form-group select option {
+  color: #1f2937;
+}
+
 .form-group input.is-invalid,
 .form-group textarea.is-invalid,
 .form-group select.is-invalid {

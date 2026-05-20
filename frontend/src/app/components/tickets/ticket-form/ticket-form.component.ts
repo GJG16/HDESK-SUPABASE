@@ -2,9 +2,10 @@ import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { RouterModule, ActivatedRoute, Router } from '@angular/router';
-import { TicketService } from '../../services/ticket.service';
-import { AuthService } from '../../services/auth.service';
-import { Ticket } from '../../models';
+import { TicketService } from '../../../services/ticket.service';
+import { AuthService } from '../../../services/auth.service';
+import { UsuariosService } from '../../../services/usuarios.service';
+import { Ticket, User } from '../../../models';
 
 @Component({
   selector: 'app-ticket-form',
@@ -19,11 +20,14 @@ export class TicketFormComponent implements OnInit {
   isEditMode = false;
   ticketId: string | null = null;
   error = '';
+  currentUser: User | null = null;
+  usuarios: User[] = [];
 
   constructor(
     private formBuilder: FormBuilder,
     private ticketService: TicketService,
     private authService: AuthService,
+    private usuariosService: UsuariosService,
     private route: ActivatedRoute,
     private router: Router
   ) {
@@ -31,16 +35,32 @@ export class TicketFormComponent implements OnInit {
       titulo: ['', [Validators.required, Validators.minLength(5)]],
       descripcion: ['', [Validators.required, Validators.minLength(10)]],
       prioridad: ['media', Validators.required],
-      estado: ['abierto', Validators.required]
+      estado: ['abierto', Validators.required],
+      usuario_id: ['', Validators.required]
     });
   }
 
   ngOnInit(): void {
+    this.currentUser = this.authService.getCurrentUser();
+
+    if (this.authService.isAdmin()) {
+      this.usuariosService.getUsuarios().subscribe({
+        next: (usuarios) => {
+          this.usuarios = usuarios;
+        },
+        error: (error) => {
+          console.error('Error al cargar usuarios:', error);
+        }
+      });
+    } else if (this.currentUser?.id) {
+      this.ticketForm.patchValue({ usuario_id: this.currentUser.id });
+    }
+
     this.route.params.subscribe(params => {
       if (params['id']) {
         this.isEditMode = true;
         this.ticketId = params['id'];
-        this.loadTicket(this.ticketId);
+        this.loadTicket(params['id']);
       } else {
         this.isEditMode = false;
       }
@@ -87,10 +107,9 @@ export class TicketFormComponent implements OnInit {
         }
       });
     } else {
-      const currentUser = this.authService.getCurrentUser();
       const newTicket = {
         ...formValue,
-        usuario_id: currentUser?.id
+        usuario_id: this.authService.isAdmin() ? formValue.usuario_id : this.currentUser?.id
       };
       this.ticketService.createTicket(newTicket).subscribe({
         next: () => {
@@ -110,5 +129,9 @@ export class TicketFormComponent implements OnInit {
 
   get f() {
     return this.ticketForm.controls;
+  }
+
+  isAdmin(): boolean {
+    return this.authService.isAdmin();
   }
 }

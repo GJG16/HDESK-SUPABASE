@@ -1,66 +1,117 @@
-<div class="dashboard">
-  <nav class="navbar">
-    <div class="navbar-content">
-      <h1 class="navbar-title">🎟️ Helpdesk</h1>
-      <div class="navbar-menu">
-        <button (click)="navigateTo('/usuarios')" class="btn-nav">Usuarios</button>
-        <button (click)="navigateTo('/tickets')" class="btn-nav">Tickets</button>
-        <span class="user-info">{{ currentUser?.nombre }}</span>
-        <button (click)="logout()" class="btn-logout">Logout</button>
-      </div>
-    </div>
-  </nav>
-
-  <div class="dashboard-content">
-    <h2>Bienvenido, {{ currentUser?.nombre }}</h2>
-
-    <div class="stats-grid">
-      <div class="stat-card">
-        <h3>Total Tickets</h3>
-        <p class="stat-value">{{ stats.total }}</p>
-      </div>
-      <div class="stat-card">
-        <h3>Abiertos</h3>
-        <p class="stat-value abiertos">{{ stats.abiertos }}</p>
-      </div>
-      <div class="stat-card">
-        <h3>En Progreso</h3>
-        <p class="stat-value en-progreso">{{ stats.en_progreso }}</p>
-      </div>
-      <div class="stat-card">
-        <h3>Resueltos</h3>
-        <p class="stat-value resueltos">{{ stats.resueltos }}</p>
-      </div>
+<div class="dashboard-shell">
+  <aside class="sidebar">
+    <div>
+      <div class="brand">Helpdesk V2</div>
+      <p class="brand-subtitle">Panel operativo estilo Jira / ServiceNow</p>
     </div>
 
-    <div class="recent-tickets">
-      <h3>Tickets Recientes</h3>
-      <div *ngIf="loading" class="loading">Cargando...</div>
-      <div *ngIf="!loading && tickets.length > 0" class="tickets-table">
-        <table>
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>Título</th>
-              <th>Estado</th>
-              <th>Prioridad</th>
-              <th>Fecha</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr *ngFor="let ticket of tickets" [attr.data-estado]="ticket.estado">
-              <td>#{{ ticket.id?.substring(0, 6) }}</td>
-              <td>{{ ticket.titulo }}</td>
-              <td><span class="badge" [attr.data-state]="ticket.estado">{{ ticket.estado }}</span></td>
-              <td><span class="badge" [attr.data-priority]="ticket.prioridad">{{ ticket.prioridad }}</span></td>
-              <td>{{ ticket.fecha_creacion | date: 'short' }}</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-      <div *ngIf="!loading && tickets.length === 0" class="empty-state">
-        No hay tickets disponibles
-      </div>
+    <div class="user-card">
+      <span class="role-pill" [attr.data-role]="currentRole">{{ currentRole }}</span>
+      <h2>{{ currentUser?.nombre }}</h2>
+      <p>{{ currentUser?.email }}</p>
     </div>
-  </div>
+
+    <div class="sidebar-actions">
+      <button (click)="navigateTo('/tickets')" class="sidebar-button primary">Ir a tickets</button>
+      <button (click)="navigateTo('/tickets/kanban')" class="sidebar-button" *ngIf="isAgent() || isAdmin()">Tablero Kanban</button>
+      <button (click)="navigateTo('/reports')" class="sidebar-button" *ngIf="isAdmin()">Reportes y auditoría</button>
+      <button (click)="navigateTo('/tickets/new')" class="sidebar-button" *ngIf="isAdmin() || isAgent() || isUser()">Nuevo ticket</button>
+      <button (click)="logout()" class="sidebar-button danger">Cerrar sesión</button>
+    </div>
+  </aside>
+
+  <main class="workspace">
+    <section class="hero">
+      <div>
+        <p class="eyebrow">Centro de control</p>
+        <h1>Bienvenido, {{ currentUser?.nombre }}</h1>
+        <p class="hero-copy">
+          <span *ngIf="isAdmin()">Administras usuarios, tickets y operación completa.</span>
+          <span *ngIf="isAgent()">Gestiona tu cola, toma tickets y prioriza el trabajo activo.</span>
+          <span *ngIf="isUser()">Supervisa tus solicitudes y sigue su evolución de punta a punta.</span>
+        </p>
+      </div>
+      <div class="hero-actions">
+        <button (click)="navigateTo('/tickets')" class="hero-button">Abrir tablero</button>
+      </div>
+    </section>
+
+    <section class="stats-grid">
+      <article class="stat-card">
+        <span>Total</span>
+        <strong>{{ stats.total }}</strong>
+      </article>
+      <article class="stat-card accent-red">
+        <span>Abiertos</span>
+        <strong>{{ stats.abiertos }}</strong>
+      </article>
+      <article class="stat-card accent-amber">
+        <span>En progreso</span>
+        <strong>{{ stats.en_progreso }}</strong>
+      </article>
+      <article class="stat-card accent-green">
+        <span>Resueltos</span>
+        <strong>{{ stats.resueltos }}</strong>
+      </article>
+      <article class="stat-card accent-slate">
+        <span>Cerrados</span>
+        <strong>{{ stats.cerrados }}</strong>
+      </article>
+    </section>
+
+    <section class="content-grid">
+      <div class="panel panel-large">
+        <div class="panel-header">
+          <h3>Tickets recientes</h3>
+          <button class="link-button" (click)="navigateTo('/tickets')">Ver todos</button>
+        </div>
+
+        <div *ngIf="loading" class="loading">Cargando...</div>
+        <div *ngIf="!loading && tickets.length > 0" class="tickets-table">
+          <table>
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Título</th>
+                <th>Estado</th>
+                <th>Prioridad</th>
+                <th>Fecha</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let ticket of tickets">
+                <td>#{{ ticket.id?.substring(0, 6) }}</td>
+                <td>{{ ticket.titulo }}</td>
+                <td><span class="badge" [attr.data-state]="ticket.estado">{{ ticket.estado }}</span></td>
+                <td><span class="badge" [attr.data-priority]="ticket.prioridad">{{ ticket.prioridad }}</span></td>
+                <td>{{ ticket.fecha_creacion | date: 'short' }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div *ngIf="!loading && tickets.length === 0" class="empty-state">No hay tickets disponibles</div>
+      </div>
+
+      <div class="panel panel-compact">
+        <div class="panel-header">
+          <h3>Acciones rápidas</h3>
+        </div>
+
+        <div class="quick-actions">
+          <button (click)="navigateTo('/tickets/new')" class="quick-action">Crear ticket</button>
+          <button (click)="navigateTo('/tickets')" class="quick-action">Ir al tablero</button>
+          <button (click)="navigateTo('/tickets/kanban')" class="quick-action" *ngIf="isAgent() || isAdmin()">Abrir Kanban</button>
+          <button (click)="navigateTo('/reports')" class="quick-action" *ngIf="isAdmin()">Ver reportes</button>
+          <div class="info-block" *ngIf="isAgent()">
+            <strong>Modo agente</strong>
+            <p>Autoasigna tickets y actualiza estado/prioridad desde la cola.</p>
+          </div>
+          <div class="info-block admin" *ngIf="isAdmin()">
+            <strong>Modo administrador</strong>
+            <p>Tienes control total sobre usuarios y tickets.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
 </div>
