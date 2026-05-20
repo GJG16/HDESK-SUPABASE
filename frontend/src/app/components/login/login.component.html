@@ -1,51 +1,99 @@
-<div class="login-container">
-  <div class="login-card">
-    <h1>Helpdesk</h1>
-    <h2>Iniciar Sesión</h2>
+<div class="login-shell">
+  <section class="brand-panel">
+    <div class="brand-badge">
+      <span class="brand-mark">N</span>
+      <div>
+        <p class="brand-name">NexaCorp</p>
+        <p class="brand-subtitle">Helpdesk empresarial</p>
+      </div>
+    </div>
 
-    <form [formGroup]="loginForm" (ngSubmit)="onSubmit()">
-      <div *ngIf="error" class="alert alert-danger">
-        {{ error }}
+    <div class="brand-copy">
+      <p class="eyebrow">Plataforma de operaciones</p>
+      <h1>Acceso seguro para equipos que necesitan orden, trazabilidad y respuesta rápida.</h1>
+      <p class="lead">
+        Centraliza tickets, seguimiento y métricas en una interfaz sobria, pensada para entornos corporativos.
+      </p>
+    </div>
+
+    <div class="brand-metrics">
+      <div>
+        <span class="metric-label">Disponibilidad</span>
+        <strong>99.98%</strong>
+      </div>
+      <div>
+        <span class="metric-label">Tiempos de respuesta</span>
+        <strong>Optimizado</strong>
+      </div>
+      <div>
+        <span class="metric-label">Seguridad</span>
+        <strong>JWT + roles</strong>
+      </div>
+    </div>
+  </section>
+
+  <section class="form-panel">
+    <div class="login-card">
+      <div class="card-header">
+        <p class="card-kicker">Bienvenido de nuevo</p>
+        <h2>Iniciar sesión</h2>
+        <p class="card-copy">Ingresa con tu cuenta corporativa para continuar.</p>
       </div>
 
-      <div class="form-group">
-        <label for="email">Email</label>
-        <input
-          type="email"
-          class="form-control"
-          id="email"
-          formControlName="email"
-          [class.is-invalid]="submitted && f['email'].errors"
-        />
-        <div *ngIf="submitted && f['email'].errors" class="invalid-feedback">
-          <div *ngIf="f['email'].errors['required']">Email es requerido</div>
-          <div *ngIf="f['email'].errors['email']">Email inválido</div>
+      <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" class="login-form">
+        <div *ngIf="error" class="alert alert-danger">
+          {{ error }}
         </div>
-      </div>
 
-      <div class="form-group">
-        <label for="password">Contraseña</label>
-        <input
-          type="password"
-          class="form-control"
-          id="password"
-          formControlName="password"
-          [class.is-invalid]="submitted && f['password'].errors"
-        />
-        <div *ngIf="submitted && f['password'].errors" class="invalid-feedback">
-          <div *ngIf="f['password'].errors['required']">Contraseña es requerida</div>
-          <div *ngIf="f['password'].errors['minlength']">Mínimo 8 caracteres</div>
+        <div class="form-group">
+          <label for="email">Correo corporativo</label>
+          <input
+            type="email"
+            class="form-control"
+            id="email"
+            formControlName="email"
+            placeholder="nombre@empresa.com"
+            [class.is-invalid]="submitted && f['email'].errors"
+          />
+          <div *ngIf="submitted && f['email'].errors" class="invalid-feedback">
+            <div *ngIf="f['email'].errors['required']">El correo es requerido</div>
+            <div *ngIf="f['email'].errors['email']">Ingresa un correo válido</div>
+          </div>
         </div>
-      </div>
 
-      <button type="submit" class="btn btn-primary w-100" [disabled]="loading">
-        <span *ngIf="!loading">Iniciar Sesión</span>
-        <span *ngIf="loading">Cargando...</span>
-      </button>
-    </form>
+        <div class="form-group">
+          <label for="password">Contraseña</label>
+          <input
+            type="password"
+            class="form-control"
+            id="password"
+            formControlName="password"
+            placeholder="••••••••"
+            [class.is-invalid]="submitted && f['password'].errors"
+          />
+          <div *ngIf="submitted && f['password'].errors" class="invalid-feedback">
+            <div *ngIf="f['password'].errors['required']">La contraseña es requerida</div>
+            <div *ngIf="f['password'].errors['minlength']">Debe tener al menos 8 caracteres</div>
+          </div>
+        </div>
 
-    <p class="text-center mt-3">
-      ¿No tienes cuenta? <a href="/register">Registrarse</a>
-    </p>
-  </div>
+        <div class="form-actions">
+          <label class="remember-me">
+            <input type="checkbox" />
+            <span>Recordarme</span>
+          </label>
+          <a href="#" class="forgot-link">¿Olvidaste tu contraseña?</a>
+        </div>
+
+        <button type="submit" class="btn btn-primary w-100" [disabled]="loading">
+          <span *ngIf="!loading">Entrar al sistema</span>
+          <span *ngIf="loading">Validando acceso...</span>
+        </button>
+      </form>
+
+      <p class="register-link">
+        ¿No tienes cuenta? <a href="/register">Solicitar acceso</a>
+      </p>
+    </div>
+  </section>
 </div>

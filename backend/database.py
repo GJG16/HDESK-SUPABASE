@@ -9,7 +9,7 @@ db = Database()
 
 async def connect_db():
     """Conectar a MongoDB"""
-    db.client = AsyncClient(settings.mongodb_url)
+    db.client = AsyncIOMotorClient(settings.mongodb_url)
     db.db = db.client[settings.mongodb_db]
     
     # Crear índices
