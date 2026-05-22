@@ -5,15 +5,17 @@ import { FormsModule } from '@angular/forms';
 import { TicketService } from '../../../services/ticket.service';
 import { Ticket, TicketStatus, User } from '../../../models';
 import { AuthService } from '../../../services/auth.service';
+import { TicketCreateModalComponent } from '../ticket-create-modal/ticket-create-modal.component';
 
 @Component({
   selector: 'app-tickets-list',
   standalone: true,
-  imports: [CommonModule, RouterModule, FormsModule],
+  imports: [CommonModule, RouterModule, FormsModule, TicketCreateModalComponent],
   templateUrl: './tickets-list.component.html',
   styleUrls: ['./tickets-list.component.css']
 })
 export class TicketsListComponent implements OnInit {
+  isModalOpen = false;
   tickets: Ticket[] = [];
   filteredTickets: Ticket[] = [];
   loading = true;
@@ -50,14 +52,24 @@ export class TicketsListComponent implements OnInit {
   }
 
   applyFilters(): void {
-    this.filteredTickets = this.tickets.filter(ticket => {
-      const matchEstado = !this.filterEstado || ticket.estado === this.filterEstado;
-      const matchPrioridad = !this.filterPrioridad || ticket.prioridad === this.filterPrioridad;
-      const matchSearch = !this.searchTerm || 
-        ticket.titulo.toLowerCase().includes(this.searchTerm.toLowerCase());
-      
-      return matchEstado && matchPrioridad && matchSearch;
-    });
+    try {
+      if (!this.tickets || !Array.isArray(this.tickets)) {
+        this.filteredTickets = [];
+        return;
+      }
+      this.filteredTickets = this.tickets.filter(ticket => {
+        const matchEstado = !this.filterEstado || ticket.estado === this.filterEstado;
+        const matchPrioridad = !this.filterPrioridad || ticket.prioridad === this.filterPrioridad;
+        const tituloSeguro = ticket.titulo || '';
+        const matchSearch = !this.searchTerm || 
+          tituloSeguro.toLowerCase().includes(this.searchTerm.toLowerCase());
+        
+        return matchEstado && matchPrioridad && matchSearch;
+      });
+    } catch (e) {
+      console.error('Error aplicando filtros:', e);
+      this.filteredTickets = [];
+    }
   }
 
   onFilterChange(): void {

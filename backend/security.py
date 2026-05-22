@@ -9,10 +9,10 @@ from config.settings import settings
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 # Constantes de seguridad
-SECRET_KEY = "your-secret-key-change-in-production"  # Cambiar en .env
-ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 30
-REFRESH_TOKEN_EXPIRE_DAYS = 7
+SECRET_KEY = settings.secret_key
+ALGORITHM = settings.algorithm
+ACCESS_TOKEN_EXPIRE_MINUTES = settings.access_token_expire_minutes
+REFRESH_TOKEN_EXPIRE_DAYS = settings.refresh_token_expire_days
 
 class TokenData(BaseModel):
     user_id: str

@@ -5,14 +5,17 @@ import { AuthService } from '../../services/auth.service';
 import { TicketService } from '../../services/ticket.service';
 import { User, Ticket } from '../../models';
 
+import { TicketCreateModalComponent } from '../tickets/ticket-create-modal/ticket-create-modal.component';
+
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, RouterModule],
+  imports: [CommonModule, RouterModule, TicketCreateModalComponent],
   templateUrl: './dashboard.component.html',
   styleUrls: ['./dashboard.component.css']
 })
 export class DashboardComponent implements OnInit {
+  isModalOpen = false;
   currentUser: User | null = null;
   tickets: Ticket[] = [];
   loading = true;

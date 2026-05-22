@@ -14,11 +14,11 @@ from routes.reports import router as reports_router
 async def lifespan(app: FastAPI):
     # Startup
     await connect_db()
-    print("🚀 Aplicación iniciada")
+    print("[START] Aplicacion iniciada")
     yield
     # Shutdown
     await close_db()
-    print("🛑 Aplicación detenida")
+    print("[STOP] Aplicacion detenida")
 
 # Crear aplicación FastAPI
 app = FastAPI(

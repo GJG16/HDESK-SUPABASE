@@ -20,13 +20,13 @@ async def connect_db():
     await db.db.audit_logs.create_index("created_at")
     await db.db.audit_logs.create_index("actor_admin_id")
     
-    print(f"✓ Conectado a MongoDB: {settings.mongodb_url}/{settings.mongodb_db}")
+    print(f"[OK] Conectado a MongoDB: {settings.mongodb_url}/{settings.mongodb_db}")
 
 async def close_db():
     """Cerrar conexión a MongoDB"""
     if db.client:
         db.client.close()
-        print("✓ Desconectado de MongoDB")
+        print("[OK] Desconectado de MongoDB")
 
 def get_database() -> AsyncIOMotorDatabase:
     """Obtener instancia de base de datos"""

@@ -7,7 +7,7 @@
     <div class="topbar-actions">
       <button (click)="navigateToDashboard()" class="btn-ghost">Dashboard</button>
       <button *ngIf="isAgent() || isAdmin()" (click)="goToKanban()" class="btn-ghost">Kanban</button>
-      <button (click)="createTicket()" class="btn-create">+ Nuevo Ticket</button>
+      <button (click)="isModalOpen = true" class="btn-create">+ Nuevo Ticket</button>
       <button (click)="logout()" class="btn-logout">Logout</button>
     </div>
   </div>
@@ -99,9 +99,14 @@
       </div>
 
       <div *ngIf="!loading && filteredTickets.length === 0" class="empty-state">
-        <p>No hay tickets que coincidan con los filtros</p>
-        <button (click)="createTicket()" class="btn-create">Crear primer ticket</button>
+        No se encontraron tickets.
       </div>
     </section>
   </div>
 </div>
+
+<app-ticket-create-modal 
+  *ngIf="isModalOpen" 
+  (close)="isModalOpen = false" 
+  (ticketCreated)="loadTickets()">
+</app-ticket-create-modal>

@@ -66,3 +66,13 @@ export interface TicketReport {
   by_agent: TicketReportByAgent[];
 }
 
+export interface TicketComment {
+  id?: string;
+  ticket_id: string;
+  usuario_id: string;
+  texto: string;
+  nombre_autor?: string;
+  rol_autor?: string;
+  fecha_creacion?: Date;
+}
+

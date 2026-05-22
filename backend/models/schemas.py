@@ -64,7 +64,7 @@ class TicketBase(BaseModel):
     asignado_a: Optional[str] = None
 
 class TicketCreate(TicketBase):
-    usuario_id: str
+    usuario_id: Optional[str] = None
 
 
 class TicketUpdate(BaseModel):
@@ -90,6 +90,24 @@ class Ticket(TicketBase):
     fecha_actualizacion: Optional[datetime] = None
     fecha_resolucion: Optional[datetime] = None
     
+    class Config:
+        from_attributes = True
+
+
+class TicketCommentBase(BaseModel):
+    texto: str = Field(..., min_length=1, max_length=1000)
+
+class TicketCommentCreate(TicketCommentBase):
+    pass
+
+class TicketComment(TicketCommentBase):
+    id: Optional[str] = None
+    ticket_id: str
+    usuario_id: str
+    nombre_autor: Optional[str] = None
+    rol_autor: Optional[UserRole] = None
+    fecha_creacion: Optional[datetime] = None
+
     class Config:
         from_attributes = True
 

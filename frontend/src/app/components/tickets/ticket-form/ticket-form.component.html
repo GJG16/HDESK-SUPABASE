@@ -76,13 +76,37 @@
       </div>
 
       <div class="form-actions">
-        <button type="submit" class="btn btn-primary" [disabled]="loading">
-          {{ loading ? 'Guardando...' : (isEditMode ? 'Actualizar' : 'Crear') }}
+        <button type="submit" class="btn btn-primary" [disabled]="loading || ticketForm.disabled">
+          {{ loading ? 'Guardando...' : 'Actualizar' }}
         </button>
         <button type="button" class="btn btn-secondary" (click)="cancel()">
-          Cancelar
+          Regresar
         </button>
       </div>
     </form>
+    
+    <!-- Sección de Comentarios -->
+    <div class="comments-section" *ngIf="isEditMode">
+      <h3>Historial de Conversación y Notas</h3>
+      <div class="comments-list">
+        <div *ngIf="comments.length === 0" class="no-comments">No hay comentarios ni notas aún.</div>
+        
+        <div class="comment-item" *ngFor="let c of comments" [ngClass]="{'comment-mine': c.usuario_id === currentUser?.id, 'comment-agent': c.rol_autor === 'agent' || c.rol_autor === 'admin'}">
+          <div class="comment-header">
+            <strong>{{ c.nombre_autor || 'Usuario' }}</strong>
+            <span class="comment-role">{{ c.rol_autor }}</span>
+            <span class="comment-date">{{ c.fecha_creacion | date:'short' }}</span>
+          </div>
+          <div class="comment-body">{{ c.texto }}</div>
+        </div>
+      </div>
+      
+      <div class="comment-input-area">
+        <textarea [(ngModel)]="newCommentTexto" placeholder="Escribe un comentario o nota..." rows="3" class="form-control textarea"></textarea>
+        <button (click)="submitComment()" class="btn btn-primary btn-comment" [disabled]="submittingComment || !newCommentTexto.trim()">
+          {{ submittingComment ? 'Enviando...' : 'Enviar mensaje' }}
+        </button>
+      </div>
+    </div>
   </div>
 </div>

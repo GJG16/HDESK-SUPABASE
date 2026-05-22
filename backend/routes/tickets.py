@@ -114,6 +114,10 @@ async def create_ticket(ticket_data: TicketCreate, db=Depends(get_database), cur
     if not _is_admin(current_user):
         ticket_dict["usuario_id"] = current_user.get("id")
 
+    # Forzar prioridad media para usuarios finales independientemente de lo que envíen
+    if current_user.get("rol") == "user":
+        ticket_dict["prioridad"] = TicketStatus.MEDIA if hasattr(TicketStatus, 'MEDIA') else "media" # Priority.MEDIA
+
     ticket_dict["fecha_creacion"] = datetime.utcnow()
     ticket_dict["fecha_actualizacion"] = datetime.utcnow()
 
@@ -123,6 +127,62 @@ async def create_ticket(ticket_data: TicketCreate, db=Depends(get_database), cur
     created_ticket = _serialize_ticket(created_ticket)
 
     return created_ticket
+
+from models.schemas import TicketComment, TicketCommentCreate
+
+@router.get("/{ticket_id}/comments", response_model=List[TicketComment])
+async def get_ticket_comments(ticket_id: str, db=Depends(get_database), current_user=Depends(get_current_user)):
+    """Obtener comentarios de un ticket"""
+    try:
+        ticket = await db.tickets.find_one({"_id": ObjectId(ticket_id)})
+        if not ticket:
+            raise HTTPException(status_code=404, detail="Ticket no encontrado")
+        
+        if not (_is_admin(current_user) or _is_agent(current_user) or _is_ticket_owner(ticket, current_user)):
+            raise HTTPException(status_code=403, detail="No tienes permiso para ver estos comentarios")
+
+        comments = await db.comments.find({"ticket_id": ticket_id}).sort("fecha_creacion", 1).to_list(None)
+        
+        # Serialize _id to id
+        for c in comments:
+            c["id"] = str(c.pop("_id"))
+            
+        return comments
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@router.post("/{ticket_id}/comments", response_model=TicketComment)
+async def create_ticket_comment(ticket_id: str, comment_data: TicketCommentCreate, db=Depends(get_database), current_user=Depends(get_current_user)):
+    """Crear un comentario en un ticket"""
+    try:
+        ticket = await db.tickets.find_one({"_id": ObjectId(ticket_id)})
+        if not ticket:
+            raise HTTPException(status_code=404, detail="Ticket no encontrado")
+        
+        if not (_is_admin(current_user) or _is_agent(current_user) or _is_ticket_owner(ticket, current_user)):
+            raise HTTPException(status_code=403, detail="No tienes permiso para comentar en este ticket")
+
+        comment_dict = comment_data.dict()
+        comment_dict["ticket_id"] = ticket_id
+        comment_dict["usuario_id"] = current_user.get("id")
+        comment_dict["nombre_autor"] = current_user.get("nombre")
+        comment_dict["rol_autor"] = current_user.get("rol")
+        comment_dict["fecha_creacion"] = datetime.utcnow()
+
+        result = await db.comments.insert_one(comment_dict)
+        
+        # Actualizar fecha del ticket
+        await db.tickets.update_one({"_id": ObjectId(ticket_id)}, {"$set": {"fecha_actualizacion": datetime.utcnow()}})
+
+        created_comment = await db.comments.find_one({"_id": result.inserted_id})
+        created_comment["id"] = str(created_comment.pop("_id"))
+        return created_comment
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.put("/{ticket_id}", response_model=Ticket)

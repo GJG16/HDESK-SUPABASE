@@ -15,7 +15,7 @@
       <button (click)="navigateTo('/tickets')" class="sidebar-button primary">Ir a tickets</button>
       <button (click)="navigateTo('/tickets/kanban')" class="sidebar-button" *ngIf="isAgent() || isAdmin()">Tablero Kanban</button>
       <button (click)="navigateTo('/reports')" class="sidebar-button" *ngIf="isAdmin()">Reportes y auditoría</button>
-      <button (click)="navigateTo('/tickets/new')" class="sidebar-button" *ngIf="isAdmin() || isAgent() || isUser()">Nuevo ticket</button>
+      <button (click)="isModalOpen = true" class="sidebar-button" *ngIf="isAdmin() || isAgent() || isUser()">Nuevo ticket</button>
       <button (click)="logout()" class="sidebar-button danger">Cerrar sesión</button>
     </div>
   </aside>
@@ -98,7 +98,10 @@
         </div>
 
         <div class="quick-actions">
-          <button (click)="navigateTo('/tickets/new')" class="quick-action">Crear ticket</button>
+          <button class="quick-btn" (click)="isModalOpen = true">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+            Nuevo ticket
+          </button>
           <button (click)="navigateTo('/tickets')" class="quick-action">Ir al tablero</button>
           <button (click)="navigateTo('/tickets/kanban')" class="quick-action" *ngIf="isAgent() || isAdmin()">Abrir Kanban</button>
           <button (click)="navigateTo('/reports')" class="quick-action" *ngIf="isAdmin()">Ver reportes</button>
@@ -115,3 +118,9 @@
     </section>
   </main>
 </div>
+
+<app-ticket-create-modal 
+  *ngIf="isModalOpen" 
+  (close)="isModalOpen = false" 
+  (ticketCreated)="loadDashboard()">
+</app-ticket-create-modal>
