@@ -5,22 +5,27 @@ import { AuthService } from '../../services/auth.service';
 import { TicketService } from '../../services/ticket.service';
 import { User, Ticket } from '../../models';
 
+import { TicketCreateModalComponent } from '../tickets/ticket-create-modal/ticket-create-modal.component';
+
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, RouterModule],
+  imports: [CommonModule, RouterModule, TicketCreateModalComponent],
   templateUrl: './dashboard.component.html',
   styleUrls: ['./dashboard.component.css']
 })
 export class DashboardComponent implements OnInit {
+  isModalOpen = false;
   currentUser: User | null = null;
   tickets: Ticket[] = [];
   loading = true;
+  currentRole: User['rol'] | null = null;
   stats = {
     total: 0,
     abiertos: 0,
     en_progreso: 0,
-    resueltos: 0
+    resueltos: 0,
+    cerrados: 0
   };
 
   constructor(
@@ -29,6 +34,7 @@ export class DashboardComponent implements OnInit {
     private router: Router
   ) {
     this.currentUser = this.authService.getCurrentUser();
+    this.currentRole = this.authService.getCurrentRole();
   }
 
   ngOnInit(): void {
@@ -55,6 +61,7 @@ export class DashboardComponent implements OnInit {
     this.stats.abiertos = tickets.filter(t => t.estado === 'abierto').length;
     this.stats.en_progreso = tickets.filter(t => t.estado === 'en_progreso').length;
     this.stats.resueltos = tickets.filter(t => t.estado === 'resuelto').length;
+    this.stats.cerrados = tickets.filter(t => t.estado === 'cerrado').length;
   }
 
   logout(): void {
@@ -64,5 +71,17 @@ export class DashboardComponent implements OnInit {
 
   navigateTo(path: string): void {
     this.router.navigate([path]);
+  }
+
+  isAdmin(): boolean {
+    return this.authService.isAdmin();
+  }
+
+  isAgent(): boolean {
+    return this.authService.isAgent();
+  }
+
+  isUser(): boolean {
+    return this.authService.isUser();
   }
 }

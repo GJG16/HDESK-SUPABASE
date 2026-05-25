@@ -9,15 +9,16 @@ from config.settings import settings
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 # Constantes de seguridad
-SECRET_KEY = "your-secret-key-change-in-production"  # Cambiar en .env
-ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 30
-REFRESH_TOKEN_EXPIRE_DAYS = 7
+SECRET_KEY = settings.secret_key
+ALGORITHM = settings.algorithm
+ACCESS_TOKEN_EXPIRE_MINUTES = settings.access_token_expire_minutes
+REFRESH_TOKEN_EXPIRE_DAYS = settings.refresh_token_expire_days
 
 class TokenData(BaseModel):
     user_id: str
     email: str
     rol: str
+    token_type: str = "access"
 
 def hash_password(password: str) -> str:
     """Hashear contraseña"""
@@ -35,7 +36,7 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -
     else:
         expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     
-    to_encode.update({"exp": expire})
+    to_encode.update({"exp": expire, "type": "access"})
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
 
@@ -47,17 +48,21 @@ def create_refresh_token(data: dict) -> str:
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
 
-def decode_token(token: str) -> Optional[TokenData]:
+def decode_token(token: str, expected_type: Optional[str] = None) -> Optional[TokenData]:
     """Decodificar y validar token JWT"""
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         user_id: str = payload.get("user_id")
         email: str = payload.get("email")
         rol: str = payload.get("rol")
+        token_type: str = payload.get("type", "access")
         
         if user_id is None or email is None:
             return None
+
+        if expected_type and token_type != expected_type:
+            return None
         
-        return TokenData(user_id=user_id, email=email, rol=rol)
+        return TokenData(user_id=user_id, email=email, rol=rol, token_type=token_type)
     except JWTError:
         return None

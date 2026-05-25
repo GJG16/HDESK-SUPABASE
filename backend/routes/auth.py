@@ -26,6 +26,7 @@ async def register(user_data: UserCreate, db=Depends(get_database)):
     
     # Crear nuevo usuario
     user_dict = user_data.dict()
+    user_dict["rol"] = "user"
     user_dict["password_hash"] = hash_password(user_dict.pop("password"))
     user_dict["activo"] = True
     
@@ -83,7 +84,7 @@ async def refresh_token(token: dict):
     """Refrescar access token"""
     from security import decode_token
     
-    token_data = decode_token(token.get("refresh_token", ""))
+    token_data = decode_token(token.get("refresh_token", ""), expected_type="refresh")
     if not token_data:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,

@@ -3,7 +3,6 @@ from .schemas import (
     UserCreate,
     UserUpdate,
     UserRole,
-    UserInDB,
     LoginRequest,
     TokenResponse,
     Ticket,
@@ -12,6 +11,7 @@ from .schemas import (
     TicketStatus,
     Priority,
     TicketFilter,
+    AuditLog,
 )
 
 __all__ = [
@@ -19,7 +19,6 @@ __all__ = [
     "UserCreate",
     "UserUpdate",
     "UserRole",
-    "UserInDB",
     "LoginRequest",
     "TokenResponse",
     "Ticket",
@@ -28,4 +27,5 @@ __all__ = [
     "TicketStatus",
     "Priority",
     "TicketFilter",
+    "AuditLog",
 ]

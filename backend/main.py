@@ -7,17 +7,18 @@ from routes import status_router
 from routes.auth import router as auth_router
 from routes.usuarios import router as usuarios_router
 from routes.tickets import router as tickets_router
+from routes.reports import router as reports_router
 
 # Lifecycle events
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup
     await connect_db()
-    print("🚀 Aplicación iniciada")
+    print("[START] Aplicacion iniciada")
     yield
     # Shutdown
     await close_db()
-    print("🛑 Aplicación detenida")
+    print("[STOP] Aplicacion detenida")
 
 # Crear aplicación FastAPI
 app = FastAPI(
@@ -41,6 +42,7 @@ app.include_router(status_router)
 app.include_router(auth_router)
 app.include_router(usuarios_router)
 app.include_router(tickets_router)
+app.include_router(reports_router)
 
 # Ruta raíz
 @app.get("/")

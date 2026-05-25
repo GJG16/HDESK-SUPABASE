@@ -41,7 +41,7 @@ export class AuthService {
   refreshToken(): Observable<any> {
     const refreshToken = localStorage.getItem('refresh_token');
     return this.http.post(`${this.apiUrl}/refresh`, { refresh_token: refreshToken }).pipe(
-      tap(response => {
+      tap((response: any) => {
         localStorage.setItem('access_token', response.access_token);
         this.tokenSubject.next(response.access_token);
       })
@@ -99,6 +99,13 @@ export class AuthService {
   }
 
   /**
+   * Obtener rol actual
+   */
+  getCurrentRole(): User['rol'] | null {
+    return this.currentUserSubject.value?.rol ?? null;
+  }
+
+  /**
    * Verificar si está autenticado
    */
   isAuthenticated(): boolean {
@@ -110,5 +117,34 @@ export class AuthService {
    */
   isAdmin(): boolean {
     return this.currentUserSubject.value?.rol === 'admin';
+  }
+
+  /**
+   * Verificar si es agente
+   */
+  isAgent(): boolean {
+    return this.currentUserSubject.value?.rol === 'agent';
+  }
+
+  /**
+   * Verificar si es usuario final
+   */
+  isUser(): boolean {
+    return this.currentUserSubject.value?.rol === 'user';
+  }
+
+  /**
+   * Verificar si puede gestionar tickets como back-office
+   */
+  canManageTickets(): boolean {
+    return this.isAdmin() || this.isAgent();
+  }
+
+  /**
+   * Verificar si puede eliminar un ticket concreto
+   */
+  canDeleteTicket(ticketOwnerId?: string): boolean {
+    const currentUser = this.currentUserSubject.value;
+    return !!currentUser && (currentUser.rol === 'admin' || currentUser.id === ticketOwnerId);
   }
 }

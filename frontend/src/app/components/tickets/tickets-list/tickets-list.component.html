@@ -1,103 +1,112 @@
 <div class="tickets-container">
-  <nav class="navbar">
-    <div class="navbar-content">
-      <h1 class="navbar-title">🎟️ Helpdesk - Tickets</h1>
-      <div class="navbar-menu">
-        <button (click)="navigateToDashboard()" class="btn-nav">Dashboard</button>
-        <button (click)="logout()" class="btn-logout">Logout</button>
-      </div>
+  <div class="tickets-topbar">
+    <div>
+      <p class="eyebrow">Tablero operativo</p>
+      <h1>Tickets</h1>
     </div>
-  </nav>
-
-  <div class="tickets-content">
-    <div class="tickets-header">
-      <h2>Gestión de Tickets</h2>
-      <button (click)="createTicket()" class="btn-create">+ Nuevo Ticket</button>
-    </div>
-
-    <div class="filters">
-      <div class="filter-group">
-        <label for="searchTerm">Buscar:</label>
-        <input 
-          type="text" 
-          id="searchTerm" 
-          [(ngModel)]="searchTerm" 
-          (input)="onFilterChange()"
-          placeholder="Buscar por título..."
-          class="filter-input"
-        />
-      </div>
-
-      <div class="filter-group">
-        <label for="filterEstado">Estado:</label>
-        <select 
-          id="filterEstado" 
-          [(ngModel)]="filterEstado" 
-          (change)="onFilterChange()"
-          class="filter-select"
-        >
-          <option value="">Todos</option>
-          <option value="abierto">Abierto</option>
-          <option value="en_progreso">En Progreso</option>
-          <option value="resuelto">Resuelto</option>
-          <option value="cerrado">Cerrado</option>
-        </select>
-      </div>
-
-      <div class="filter-group">
-        <label for="filterPrioridad">Prioridad:</label>
-        <select 
-          id="filterPrioridad" 
-          [(ngModel)]="filterPrioridad" 
-          (change)="onFilterChange()"
-          class="filter-select"
-        >
-          <option value="">Todas</option>
-          <option value="baja">Baja</option>
-          <option value="media">Media</option>
-          <option value="alta">Alta</option>
-          <option value="critica">Crítica</option>
-        </select>
-      </div>
-    </div>
-
-    <div *ngIf="loading" class="loading">
-      Cargando tickets...
-    </div>
-
-    <div *ngIf="!loading && filteredTickets.length > 0" class="tickets-table">
-      <table>
-        <thead>
-          <tr>
-            <th>ID</th>
-            <th>Título</th>
-            <th>Descripción</th>
-            <th>Estado</th>
-            <th>Prioridad</th>
-            <th>Creado</th>
-            <th>Acciones</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr *ngFor="let ticket of filteredTickets">
-            <td>#{{ ticket.id?.substring(0, 6) }}</td>
-            <td class="title">{{ ticket.titulo }}</td>
-            <td class="description">{{ ticket.descripcion | slice:0:50 }}...</td>
-            <td><span class="badge" [attr.data-state]="ticket.estado">{{ ticket.estado }}</span></td>
-            <td><span class="badge" [attr.data-priority]="ticket.prioridad">{{ ticket.prioridad }}</span></td>
-            <td>{{ ticket.fecha_creacion | date: 'short' }}</td>
-            <td class="actions">
-              <button (click)="editTicket(ticket.id)" class="btn-small btn-edit">Editar</button>
-              <button (click)="deleteTicket(ticket.id)" class="btn-small btn-delete">Eliminar</button>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-
-    <div *ngIf="!loading && filteredTickets.length === 0" class="empty-state">
-      <p>No hay tickets que coincidan con los filtros</p>
-      <button (click)="createTicket()" class="btn-create">Crear primer ticket</button>
+    <div class="topbar-actions">
+      <button (click)="navigateToDashboard()" class="btn-ghost">Dashboard</button>
+      <button *ngIf="isAgent() || isAdmin()" (click)="goToKanban()" class="btn-ghost">Kanban</button>
+      <button (click)="isModalOpen = true" class="btn-create">+ Nuevo Ticket</button>
+      <button (click)="logout()" class="btn-logout">Logout</button>
     </div>
   </div>
+
+  <div class="workspace-grid">
+    <section class="filters-panel">
+      <h2>Filtros</h2>
+      <div class="filters">
+        <div class="filter-group">
+          <label for="searchTerm">Buscar</label>
+          <input
+            type="text"
+            id="searchTerm"
+            [(ngModel)]="searchTerm"
+            (input)="onFilterChange()"
+            placeholder="Buscar por título"
+            class="filter-input"
+          />
+        </div>
+
+        <div class="filter-group">
+          <label for="filterEstado">Estado</label>
+          <select
+            id="filterEstado"
+            [(ngModel)]="filterEstado"
+            (change)="onFilterChange()"
+            class="filter-select"
+          >
+            <option value="">Todos</option>
+            <option value="abierto">Abierto</option>
+            <option value="en_progreso">En progreso</option>
+            <option value="resuelto">Resuelto</option>
+            <option value="cerrado">Cerrado</option>
+          </select>
+        </div>
+
+        <div class="filter-group">
+          <label for="filterPrioridad">Prioridad</label>
+          <select
+            id="filterPrioridad"
+            [(ngModel)]="filterPrioridad"
+            (change)="onFilterChange()"
+            class="filter-select"
+          >
+            <option value="">Todas</option>
+            <option value="baja">Baja</option>
+            <option value="media">Media</option>
+            <option value="alta">Alta</option>
+            <option value="critica">Crítica</option>
+          </select>
+        </div>
+      </div>
+    </section>
+
+    <section class="board-panel">
+      <div *ngIf="loading" class="loading">Cargando tickets...</div>
+
+      <div *ngIf="!loading && filteredTickets.length > 0" class="tickets-table">
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Título</th>
+              <th>Descripción</th>
+              <th>Estado</th>
+              <th>Prioridad</th>
+              <th>Solicitante</th>
+              <th>Asignado</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let ticket of filteredTickets">
+              <td>#{{ ticket.id?.substring(0, 6) }}</td>
+              <td class="title">{{ ticket.titulo }}</td>
+              <td class="description">{{ ticket.descripcion | slice:0:50 }}...</td>
+              <td><span class="badge" [attr.data-state]="ticket.estado">{{ ticket.estado }}</span></td>
+              <td><span class="badge" [attr.data-priority]="ticket.prioridad">{{ ticket.prioridad }}</span></td>
+              <td>{{ ticket.usuario_id.substring(0, 6) }}</td>
+              <td>{{ ticket.asignado_a ? ticket.asignado_a.substring(0, 6) : 'Sin asignar' }}</td>
+              <td class="actions">
+                <button *ngIf="canSelfAssign(ticket)" (click)="assignToMe(ticket)" class="btn-small btn-assign">Asignarme</button>
+                <button *ngIf="canEditTicket(ticket)" (click)="editTicket(ticket.id)" class="btn-small btn-edit">Editar</button>
+                <button *ngIf="canDeleteTicket(ticket)" (click)="deleteTicket(ticket.id)" class="btn-small btn-delete">Eliminar</button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div *ngIf="!loading && filteredTickets.length === 0" class="empty-state">
+        No se encontraron tickets.
+      </div>
+    </section>
+  </div>
 </div>
+
+<app-ticket-create-modal 
+  *ngIf="isModalOpen" 
+  (close)="isModalOpen = false" 
+  (ticketCreated)="loadTickets()">
+</app-ticket-create-modal>

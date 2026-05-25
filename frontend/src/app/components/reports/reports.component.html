@@ -1,0 +1,90 @@
+<div class="reports-shell">
+  <header class="reports-topbar">
+    <div>
+      <p class="eyebrow">Administración</p>
+      <h1>Reportes y auditoría</h1>
+      <p class="subtitle">Resumen operativo de tickets por estado y por agente.</p>
+    </div>
+    <div class="actions">
+      <button class="btn-secondary" (click)="navigateToDashboard()">Dashboard</button>
+      <button class="btn-primary" (click)="downloadJson()" [disabled]="!report">Descargar JSON</button>
+    </div>
+  </header>
+
+  <section *ngIf="loading" class="state-card">Cargando reporte...</section>
+  <section *ngIf="error" class="state-card error">{{ error }}</section>
+
+  <section *ngIf="!loading && report" class="content-grid">
+    <article class="metric-card highlight">
+      <span>Total tickets</span>
+      <strong>{{ report.total_tickets }}</strong>
+    </article>
+
+    <article class="panel">
+      <h2>Por estado</h2>
+      <div class="bar-list">
+        <div class="bar-row" *ngFor="let row of report.by_state">
+          <div class="bar-label">
+            <span>{{ row.estado }}</span>
+            <strong>{{ row.total }}</strong>
+          </div>
+          <div class="bar-track">
+            <div class="bar-fill" [style.width.%]="(row.total / report.total_tickets) * 100 || 0"></div>
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <article class="panel full-width">
+      <h2>Por agente</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Agente</th>
+            <th>Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let row of report.by_agent">
+            <td>{{ row.asignado_a }}</td>
+            <td>{{ row.total }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </article>
+
+    <article class="panel full-width audit-panel">
+      <div class="panel-headline">
+        <div>
+          <p class="section-kicker">Auditoría</p>
+          <h2>Eventos recientes</h2>
+        </div>
+        <button class="btn-secondary mini" (click)="loadAuditLogs()">Actualizar</button>
+      </div>
+
+      <div *ngIf="auditLoading" class="audit-state">Cargando auditoría...</div>
+      <div *ngIf="!auditLoading && auditLogs.length === 0" class="audit-state empty">
+        No hay eventos de auditoría recientes.
+      </div>
+
+      <div *ngIf="!auditLoading && auditLogs.length > 0" class="audit-list">
+        <article class="audit-item" *ngFor="let log of auditLogs">
+          <div class="audit-icon" [attr.data-action]="log.action">{{ log.action === 'delete_ticket' ? 'T' : 'U' }}</div>
+          <div class="audit-body">
+            <div class="audit-topline">
+              <strong>{{ formatAction(log.action) }}</strong>
+              <span>{{ log.created_at | date: 'short' }}</span>
+            </div>
+            <p>
+              <span *ngIf="log.actor_admin_nombre; else actorFallback">{{ log.actor_admin_nombre }}</span>
+              <ng-template #actorFallback>{{ log.actor_admin_id }}</ng-template>
+              <span>sobre</span>
+              <strong>{{ formatResource(log) }}</strong>
+            </p>
+            <small>{{ log.resource_type | titlecase }} · {{ log.resource_id }}</small>
+          </div>
+        </article>
+      </div>
+    </article>
+  </section>
+</div>

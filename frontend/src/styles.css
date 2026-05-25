@@ -1,1 +1,72 @@
-/* You can add global styles to this file, and also import other style files */
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap');
+
+:root {
+	color-scheme: dark;
+	--bg-0: #000000;
+	--bg-1: #09090b;
+	--bg-2: #18181b;
+	--panel: rgba(24, 24, 27, 0.6);
+	--panel-strong: rgba(39, 39, 42, 0.8);
+	--stroke: rgba(255, 255, 255, 0.1);
+	--stroke-strong: rgba(255, 255, 255, 0.2);
+	--text: #fafafa;
+	--muted: #a1a1aa;
+	--accent: #8b5cf6; /* Violet */
+	--accent-2: #3b82f6; /* Blue */
+	--warning: #fbbf24;
+	--danger: #ef4444;
+	--success: #10b981;
+	--shadow-lg: 0 32px 64px rgba(0, 0, 0, 0.8);
+	--shadow-md: 0 16px 32px rgba(0, 0, 0, 0.6);
+}
+
+html,
+body {
+	min-height: 100%;
+	margin: 0;
+	background: #000000;
+	background-image: 
+		radial-gradient(ellipse at top, rgba(139, 92, 246, 0.15), transparent 50%),
+		radial-gradient(ellipse at bottom, rgba(59, 130, 246, 0.1), transparent 50%);
+	color: var(--text);
+	font-family: 'Manrope', 'Segoe UI', sans-serif;
+}
+
+body {
+	line-height: 1.5;
+}
+
+* {
+	box-sizing: border-box;
+}
+
+a {
+	color: inherit;
+}
+
+button,
+input,
+select,
+textarea {
+	font: inherit;
+}
+
+::selection {
+	background: rgba(25, 194, 178, 0.28);
+	color: #f8fbff;
+}
+
+::-webkit-scrollbar {
+	width: 12px;
+	height: 12px;
+}
+
+::-webkit-scrollbar-track {
+	background: rgba(15, 23, 42, 0.7);
+}
+
+::-webkit-scrollbar-thumb {
+	background: rgba(148, 163, 184, 0.32);
+	border: 3px solid rgba(15, 23, 42, 0.7);
+	border-radius: 999px;
+}
