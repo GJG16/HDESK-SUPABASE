@@ -1,0 +1,4 @@
+# Asignar revisores por carpeta
+/backend/ @your-backend-team
+/frontend/ @your-frontend-team
+/.github/ @your-devops

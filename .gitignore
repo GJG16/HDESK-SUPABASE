@@ -1,4 +1,25 @@
 # Python
+venv/
+/.venv
+__pycache__/
+*.py[cod]
+
+# Node
+node_modules/
+dist/
+
+# Ignore large images and UI captures
+frontend/public/*.png
+frontend/src/assets/*.png
+ui_steps/
+frontend/ui_steps/
+backend/ui_steps/
+*.png
+
+# Env files
+.env
+.env.*
+# Python
 __pycache__/
 *.py[cod]
 *$py.class
