@@ -1,20 +1,15 @@
-<div class="tickets-container">
+<div class="tickets-container" data-testid="tickets-container">
   <div class="tickets-topbar">
     <div>
       <p class="eyebrow">Tablero operativo</p>
       <h1>Tickets</h1>
     </div>
-    <div class="topbar-actions">
+        <div class="topbar-actions">
       <button (click)="navigateToDashboard()" class="btn-ghost">Dashboard</button>
-<<<<<<< Updated upstream
       <button *ngIf="isAgent() || isAdmin()" (click)="goToKanban()" class="btn-ghost">Kanban</button>
-      <button (click)="isModalOpen = true" class="btn-create">+ Nuevo Ticket</button>
-      <button (click)="logout()" class="btn-logout">Logout</button>
-=======
-      <button *ngIf="isAgent()" (click)="goToKanban()" class="btn-ghost">Kanban</button>
       <button *ngIf="isAgent() || isUser()" (click)="isModalOpen = true" class="btn-create" data-testid="btn-create-ticket">+ Nuevo Ticket</button>
->>>>>>> Stashed changes
-    </div>
+      <button (click)="logout()" class="btn-logout">Logout</button>
+        </div>
   </div>
 
   <div class="workspace-grid">
@@ -30,6 +25,7 @@
             (input)="onFilterChange()"
             placeholder="Buscar por título"
             class="filter-input"
+            data-testid="filter-search"
           />
         </div>
 
@@ -40,6 +36,7 @@
             [(ngModel)]="filterEstado"
             (change)="onFilterChange()"
             class="filter-select"
+            data-testid="filter-estado"
           >
             <option value="">Todos</option>
             <option value="abierto">Abierto</option>
@@ -56,6 +53,7 @@
             [(ngModel)]="filterPrioridad"
             (change)="onFilterChange()"
             class="filter-select"
+            data-testid="filter-prioridad"
           >
             <option value="">Todas</option>
             <option value="baja">Baja</option>
@@ -68,9 +66,9 @@
     </section>
 
     <section class="board-panel">
-      <div *ngIf="loading" class="loading">Cargando tickets...</div>
+      <div *ngIf="loading" class="loading" data-testid="loading-state">Cargando tickets...</div>
 
-      <div *ngIf="!loading && filteredTickets.length > 0" class="tickets-table">
+      <div *ngIf="!loading && filteredTickets.length > 0" class="tickets-table" data-testid="tickets-table">
         <table>
           <thead>
             <tr>
@@ -85,7 +83,7 @@
             </tr>
           </thead>
           <tbody>
-            <tr *ngFor="let ticket of filteredTickets">
+            <tr *ngFor="let ticket of filteredTickets" data-testid="ticket-row" [attr.data-ticket-id]="ticket.id">
               <td>#{{ ticket.id?.substring(0, 6) }}</td>
               <td class="title">{{ ticket.titulo }}</td>
               <td class="description">{{ ticket.descripcion | slice:0:50 }}...</td>
@@ -94,16 +92,16 @@
               <td>{{ ticket.usuario_id.substring(0, 6) }}</td>
               <td>{{ ticket.asignado_a ? ticket.asignado_a.substring(0, 6) : 'Sin asignar' }}</td>
               <td class="actions">
-                <button *ngIf="canSelfAssign(ticket)" (click)="assignToMe(ticket)" class="btn-small btn-assign">Asignarme</button>
-                <button *ngIf="canEditTicket(ticket)" (click)="editTicket(ticket.id)" class="btn-small btn-edit">Editar</button>
-                <button *ngIf="canDeleteTicket(ticket)" (click)="deleteTicket(ticket.id)" class="btn-small btn-delete">Eliminar</button>
+                <button *ngIf="canSelfAssign(ticket)" (click)="assignToMe(ticket)" class="btn-small btn-assign" data-testid="btn-assign-ticket">Asignarme</button>
+                <button *ngIf="canEditTicket(ticket)" (click)="editTicket(ticket.id)" class="btn-small btn-edit" data-testid="btn-edit-ticket">Editar</button>
+                <button *ngIf="canDeleteTicket(ticket)" (click)="deleteTicket(ticket.id)" class="btn-small btn-delete" data-testid="btn-delete-ticket">Eliminar</button>
               </td>
             </tr>
           </tbody>
         </table>
       </div>
 
-      <div *ngIf="!loading && filteredTickets.length === 0" class="empty-state">
+      <div *ngIf="!loading && filteredTickets.length === 0" class="empty-state" data-testid="empty-state">
         No se encontraron tickets.
       </div>
     </section>
