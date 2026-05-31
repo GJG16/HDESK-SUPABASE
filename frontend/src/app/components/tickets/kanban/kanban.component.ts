@@ -56,6 +56,7 @@ export class KanbanComponent implements OnInit {
         const resp = await fetch('http://localhost:8000/api/tickets/', { headers: { Authorization: `Bearer ${token}` } });
         if (!resp.ok) throw new Error('Fallback fetch failed: ' + resp.status);
         const tickets = await resp.json();
+        console.log('Kanban fallback fetched tickets:', Array.isArray(tickets) ? tickets.length : null);
         this.tickets = tickets;
         this.groupTickets();
       } catch (e) {
