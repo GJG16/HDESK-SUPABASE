@@ -59,6 +59,11 @@ export class KanbanComponent implements OnInit {
         console.log('Kanban fallback fetched tickets:', Array.isArray(tickets) ? tickets.length : null);
         this.tickets = tickets;
         this.groupTickets();
+        this.loading = false;
+        console.debug('Kanban(fallback): loading set to', this.loading);
+        setTimeout(() => {
+          try { console.debug('Kanban(fallback): DOM board count', document.querySelectorAll('[data-testid=kanban-board]').length); } catch (e) {}
+        }, 50);
       } catch (e) {
         this.error = 'No fue posible cargar el tablero (fallback)';
       } finally {
@@ -75,6 +80,10 @@ export class KanbanComponent implements OnInit {
           this.tickets = tickets;
           this.groupTickets();
           this.loading = false;
+          console.debug('Kanban: loading set to', this.loading);
+          setTimeout(() => {
+            try { console.debug('Kanban: DOM board count', document.querySelectorAll('[data-testid=kanban-board]').length); } catch (e) {}
+          }, 50);
         }
       },
       error: (err) => {
