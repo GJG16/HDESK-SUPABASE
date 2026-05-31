@@ -144,7 +144,7 @@ export class AuthService {
    * Verificar si puede eliminar un ticket concreto
    */
   canDeleteTicket(ticketOwnerId?: string): boolean {
-    const currentUser = this.currentUserSubject.value;
-    return !!currentUser && (currentUser.rol === 'admin' || currentUser.id === ticketOwnerId);
+    // Policy: solo administradores pueden eliminar tickets (backend enforced)
+    return this.isAdmin();
   }
 }
