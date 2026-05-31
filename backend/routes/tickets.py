@@ -17,6 +17,8 @@ from backend.models.schemas import (
 )
 from backend.audit import log_deletion
 from backend.security import decode_token
+from jose import jwt as jose_jwt
+import time
 
 router = APIRouter(prefix="/api/tickets", tags=["tickets"])
 
@@ -62,8 +64,20 @@ async def get_current_user(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="No autorizado",
         )
+    # Logs para diagnosticar cabeceras y claims del token (temporal)
+    try:
+        print(f"[AUTH LOG {time.time()}] Authorization header: {authorization}")
+        try:
+            unverified = jose_jwt.get_unverified_claims(raw_token)
+            masked = {k: unverified.get(k) for k in ("user_id", "email", "rol", "exp")}
+            print(f"[AUTH LOG {time.time()}] Unverified claims: {masked}")
+        except Exception as e:
+            print(f"[AUTH LOG {time.time()}] get_unverified_claims error: {e}")
+    except Exception:
+        pass
 
     token_data = decode_token(raw_token, expected_type="access")
+    print(f"[AUTH LOG {time.time()}] decode_token result: {token_data}")
     if not token_data:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
