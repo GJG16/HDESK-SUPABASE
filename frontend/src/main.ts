@@ -4,20 +4,26 @@ import { App } from './app/app';
 
 // Hook temporal: interceptar window.fetch para loggear llamadas a /api/tickets/
 try {
-  const _origFetch = window.fetch;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  window.fetch = function(input: RequestInfo, init?: RequestInit) {
+  const _origFetch = (window as any).fetch;
+  // Reemplazo seguro con any para evitar errores de tipado en TypeScript
+  (window as any).fetch = function(...args: any[]): Promise<any> {
     try {
-      const url = typeof input === 'string' ? input : input.url;
-      if (url && url.includes('/api/tickets')) {
-        const headers = (init && init.headers) || (typeof input !== 'string' && (input as Request).headers) || {};
-        const hasAuth = (headers && ((headers as any).Authorization || (headers as any).authorization)) ? true : false;
+      const input = args[0];
+      const init = args[1];
+      const url = typeof input === 'string' ? input : (input && (input as any).url);
+      if (url && String(url).includes('/api/tickets')) {
+        const headers = (init && (init as any).headers) || (typeof input !== 'string' && (input as any).headers) || {};
+        const hasAuth = !!(headers && ((headers as any).Authorization || (headers as any).authorization));
         console.debug('fetch-hook: /api/tickets/ called, hasAuth=', hasAuth, 'url=', url, 'initHeaders=', headers);
       }
-    } catch (e) {}
-    return _origFetch.apply(this, arguments as any);
+    } catch (e) {
+      // no-op
+    }
+    return _origFetch.apply(this, args);
   };
-} catch (e) {}
+} catch (e) {
+  // no-op
+}
 
 bootstrapApplication(App, appConfig)
   .catch((err) => console.error(err));
