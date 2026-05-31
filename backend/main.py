@@ -28,27 +28,6 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-
-# Middleware para asignar X-Request-ID y loggear cabeceras clave (temporal)
-@app.middleware("http")
-async def request_id_middleware(request, call_next):
-    import uuid, time
-    rid = str(uuid.uuid4())
-    # Añadir a state para que handlers lo usen si necesitan
-    request.state.request_id = rid
-    try:
-        auth = request.headers.get('authorization')
-        client = request.client.host if request.client else None
-        print(f"[REQ {time.time()}] id={rid} method={request.method} path={request.url.path} client={client} auth_present={bool(auth)}")
-    except Exception:
-        pass
-    response = await call_next(request)
-    try:
-        response.headers['X-Request-ID'] = rid
-    except Exception:
-        pass
-    return response
-
 # Configurar CORS
 app.add_middleware(
     CORSMiddleware,

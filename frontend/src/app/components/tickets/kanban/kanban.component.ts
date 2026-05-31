@@ -50,85 +50,26 @@ export class KanbanComponent implements OnInit {
 
   loadTickets(): void {
     this.loading = true;
-    let timedOut = false;
-    const fallbackTimer = setTimeout(async () => {
-      try {
-        const token = this.authService.getToken();
-        const resp = await fetch('http://localhost:8000/api/tickets/', { headers: { Authorization: `Bearer ${token}` } });
-        if (!resp.ok) throw new Error('Fallback fetch failed: ' + resp.status);
-        const tickets = await resp.json();
-        console.log('Kanban fallback fetched tickets:', Array.isArray(tickets) ? tickets.length : null);
+    this.ticketService.getTickets().subscribe({
+      next: (tickets) => {
         this.tickets = tickets;
         this.groupTickets();
         this.loading = false;
         this.cdr.detectChanges();
-        console.debug('Kanban(fallback): loading set to', this.loading);
-        setTimeout(() => {
-          try { console.debug('Kanban(fallback): DOM board count', document.querySelectorAll('[data-testid=kanban-board]').length); } catch (e) {}
-        }, 50);
-      } catch (e) {
-        this.error = 'No fue posible cargar el tablero (fallback)';
-      } finally {
-        this.loading = false;
-        timedOut = true;
-      }
-    }, 5000);
-
-    this.ticketService.getTickets().subscribe({
-      next: (tickets) => {
-        console.debug('Kanban: ticketService.getTickets() next, count=', Array.isArray(tickets) ? tickets.length : null);
-        if (!timedOut) {
-          clearTimeout(fallbackTimer);
-          this.tickets = tickets;
-          this.groupTickets();
-          this.loading = false;
-          this.cdr.detectChanges();
-          console.debug('Kanban: loading set to', this.loading);
-          setTimeout(() => {
-            try { console.debug('Kanban: DOM board count', document.querySelectorAll('[data-testid=kanban-board]').length); } catch (e) {}
-          }, 50);
-          // If for some reason the template didn't render the board, inject a visible placeholder
-          setTimeout(() => {
-            try {
-              if (!document.querySelector('[data-testid=kanban-board]')) {
-                const shell = document.querySelector('.kanban-shell');
-                if (shell) {
-                  const placeholder = document.createElement('section');
-                  placeholder.setAttribute('data-testid', 'kanban-board');
-                  placeholder.className = 'board-grid';
-                  placeholder.textContent = '[Kanban placeholder injected]';
-                  shell.appendChild(placeholder);
-                  console.debug('Kanban: injected placeholder board into DOM');
-                }
-              }
-            } catch (e) {}
-          }, 150);
-        }
       },
       error: (err) => {
-        console.debug('Kanban: ticketService.getTickets() error:', err);
-        if (!timedOut) {
-          clearTimeout(fallbackTimer);
-          this.error = 'No fue posible cargar el tablero';
-          this.loading = false;
-          this.cdr.detectChanges();
-        }
+        this.error = 'No fue posible cargar el tablero';
+        this.loading = false;
+        this.cdr.detectChanges();
       }
     });
   }
 
   groupTickets(): void {
-    try {
-      console.debug('Kanban: grouping tickets states=', this.tickets.map(t => t.estado));
-      console.debug('Kanban: columns keys=', this.columns.map(c => c.key));
-    } catch (e) {}
     this.columns = this.columns.map((column) => ({
       ...column,
       tickets: this.tickets.filter((ticket) => ticket.estado === column.key),
     }));
-    try {
-      console.debug('Kanban: columns after grouping=', JSON.stringify(this.columns.map(c => ({ key: c.key, count: c.tickets.length, ids: c.tickets.map(t => t.id) }))));
-    } catch (e) {}
   }
 
   dragStart(event: DragEvent, ticket: Ticket): void {
