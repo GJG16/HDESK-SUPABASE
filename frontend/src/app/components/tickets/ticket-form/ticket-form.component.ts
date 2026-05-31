@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule, FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { RouterModule, ActivatedRoute, Router } from '@angular/router';
@@ -33,7 +33,8 @@ export class TicketFormComponent implements OnInit {
     private authService: AuthService,
     private usuariosService: UsuariosService,
     private route: ActivatedRoute,
-    private router: Router
+    private router: Router,
+    private cdr: ChangeDetectorRef
   ) {
     this.ticketForm = this.formBuilder.group({
       titulo: ['', [Validators.required, Validators.minLength(5)]],
@@ -86,6 +87,7 @@ export class TicketFormComponent implements OnInit {
           this.ticketForm.disable();
         }
         this.loading = false;
+        this.cdr.detectChanges();
       },
       error: (error) => {
         this.error = 'Error al cargar el ticket';
@@ -109,6 +111,7 @@ export class TicketFormComponent implements OnInit {
         this.comments.push(comment);
         this.newCommentTexto = '';
         this.submittingComment = false;
+        this.cdr.detectChanges();
       },
       error: (err) => {
         console.error('Error enviando comentario:', err);
@@ -128,13 +131,21 @@ export class TicketFormComponent implements OnInit {
     const formValue = this.ticketForm.value;
 
     if (this.isEditMode && this.ticketId) {
-      this.ticketService.updateTicket(this.ticketId, formValue).subscribe({
+      const updatePayload = this.isAdmin()
+        ? formValue
+        : {
+            estado: formValue.estado,
+            prioridad: formValue.prioridad,
+          };
+
+      this.ticketService.updateTicket(this.ticketId, updatePayload).subscribe({
         next: () => {
           this.router.navigate(['/tickets']);
         },
         error: (error) => {
           this.error = error.error?.detail || 'Error al actualizar el ticket';
           this.loading = false;
+          this.cdr.detectChanges();
         }
       });
     } else {
@@ -149,6 +160,7 @@ export class TicketFormComponent implements OnInit {
         error: (error) => {
           this.error = error.error?.detail || 'Error al crear el ticket';
           this.loading = false;
+          this.cdr.detectChanges();
         }
       });
     }

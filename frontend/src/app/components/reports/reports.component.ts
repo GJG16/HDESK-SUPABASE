@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { Router, RouterModule } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 import { TicketService } from '../../services/ticket.service';
@@ -23,7 +23,8 @@ export class ReportsComponent implements OnInit {
   constructor(
     private ticketService: TicketService,
     private authService: AuthService,
-    private router: Router
+    private router: Router,
+    private cdr: ChangeDetectorRef
   ) {}
 
   ngOnInit(): void {
@@ -42,10 +43,12 @@ export class ReportsComponent implements OnInit {
       next: (report) => {
         this.report = report;
         this.loading = false;
+        this.cdr.detectChanges();
       },
       error: (error) => {
         this.error = error.error?.detail || 'No fue posible cargar el reporte';
         this.loading = false;
+        this.cdr.detectChanges();
       }
     });
   }
@@ -56,10 +59,12 @@ export class ReportsComponent implements OnInit {
       next: (logs) => {
         this.auditLogs = logs;
         this.auditLoading = false;
+        this.cdr.detectChanges();
       },
       error: (error) => {
         this.error = error.error?.detail || 'No fue posible cargar la auditoría';
         this.auditLoading = false;
+        this.cdr.detectChanges();
       }
     });
   }

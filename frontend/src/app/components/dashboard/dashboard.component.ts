@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, Router } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
@@ -31,7 +31,8 @@ export class DashboardComponent implements OnInit {
   constructor(
     private authService: AuthService,
     private ticketService: TicketService,
-    private router: Router
+    private router: Router,
+    private cdr: ChangeDetectorRef
   ) {
     // Esperar al observable de usuario en ngOnInit para asegurar token cargado
   }
@@ -45,6 +46,7 @@ export class DashboardComponent implements OnInit {
       } else {
         this.tickets = [];
         this.loading = false;
+        this.cdr.detectChanges();
       }
     });
   }
@@ -56,10 +58,12 @@ export class DashboardComponent implements OnInit {
         this.tickets = tickets.slice(0, 5); // Últimos 5 tickets
         this.calculateStats(tickets);
         this.loading = false;
+        this.cdr.detectChanges();
       },
       error: (error) => {
         console.error('Error al cargar tickets:', error);
         this.loading = false;
+        this.cdr.detectChanges();
       }
     });
   }
