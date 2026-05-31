@@ -60,6 +60,7 @@ async def get_current_user(
     """Obtener usuario actual del token"""
     raw_token = _extract_token(authorization, token)
     if not raw_token:
+        print(f"[AUTH LOG {time.time()}] No raw_token provided. authorization header: {authorization}")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="No autorizado",
@@ -79,6 +80,7 @@ async def get_current_user(
     token_data = decode_token(raw_token, expected_type="access")
     print(f"[AUTH LOG {time.time()}] decode_token result: {token_data}")
     if not token_data:
+        print(f"[AUTH LOG {time.time()}] decode_token returned None for token: (len={len(raw_token) if raw_token else 0})")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Token inválido o expirado",
@@ -86,6 +88,7 @@ async def get_current_user(
 
     user = await db.usuarios.find_one({"_id": ObjectId(token_data.user_id)})
     if not user:
+        print(f"[AUTH LOG {time.time()}] No user found for id: {token_data.user_id}")
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Usuario no encontrado",
@@ -93,6 +96,7 @@ async def get_current_user(
 
     user["id"] = str(user.pop("_id"))
     user.pop("password_hash", None)
+    print(f"[AUTH LOG {time.time()}] Auth successful for user id: {user.get('id')} rol: {user.get('rol')}")
     return user
 
 
