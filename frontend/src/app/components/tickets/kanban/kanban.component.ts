@@ -49,15 +49,38 @@ export class KanbanComponent implements OnInit {
 
   loadTickets(): void {
     this.loading = true;
-    this.ticketService.getTickets().subscribe({
-      next: (tickets) => {
+    let timedOut = false;
+    const fallbackTimer = setTimeout(async () => {
+      try {
+        const token = this.authService.getToken();
+        const resp = await fetch('http://localhost:8000/api/tickets/', { headers: { Authorization: `Bearer ${token}` } });
+        if (!resp.ok) throw new Error('Fallback fetch failed: ' + resp.status);
+        const tickets = await resp.json();
         this.tickets = tickets;
         this.groupTickets();
+      } catch (e) {
+        this.error = 'No fue posible cargar el tablero (fallback)';
+      } finally {
         this.loading = false;
+        timedOut = true;
+      }
+    }, 5000);
+
+    this.ticketService.getTickets().subscribe({
+      next: (tickets) => {
+        if (!timedOut) {
+          clearTimeout(fallbackTimer);
+          this.tickets = tickets;
+          this.groupTickets();
+          this.loading = false;
+        }
       },
       error: () => {
-        this.error = 'No fue posible cargar el tablero';
-        this.loading = false;
+        if (!timedOut) {
+          clearTimeout(fallbackTimer);
+          this.error = 'No fue posible cargar el tablero';
+          this.loading = false;
+        }
       }
     });
   }
