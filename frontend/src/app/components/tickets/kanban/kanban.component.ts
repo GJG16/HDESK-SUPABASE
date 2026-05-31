@@ -114,6 +114,10 @@ export class KanbanComponent implements OnInit {
   }
 
   groupTickets(): void {
+    try {
+      console.debug('Kanban: grouping tickets states=', this.tickets.map(t => t.estado));
+      console.debug('Kanban: columns keys=', this.columns.map(c => c.key));
+    } catch (e) {}
     this.columns = this.columns.map((column) => ({
       ...column,
       tickets: this.tickets.filter((ticket) => ticket.estado === column.key),
