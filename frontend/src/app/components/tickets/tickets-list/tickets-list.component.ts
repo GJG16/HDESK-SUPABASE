@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
@@ -27,7 +27,8 @@ export class TicketsListComponent implements OnInit {
   constructor(
     private ticketService: TicketService,
     private authService: AuthService,
-    private router: Router
+    private router: Router,
+    private cdr: ChangeDetectorRef
   ) {
     // No solicitar user síncronamente; escuchamos el observable en ngOnInit
   }
@@ -53,6 +54,7 @@ export class TicketsListComponent implements OnInit {
         this.tickets = tickets;
         this.applyFilters();
         this.loading = false;
+        this.cdr.detectChanges();
       },
       error: (error) => {
         console.error('Error al cargar tickets:', error);
@@ -65,6 +67,7 @@ export class TicketsListComponent implements OnInit {
     try {
       if (!this.tickets || !Array.isArray(this.tickets)) {
         this.filteredTickets = [];
+        this.cdr.detectChanges();
         return;
       }
       this.filteredTickets = this.tickets.filter(ticket => {
@@ -76,9 +79,11 @@ export class TicketsListComponent implements OnInit {
         
         return matchEstado && matchPrioridad && matchSearch;
       });
+      this.cdr.detectChanges();
     } catch (e) {
       console.error('Error aplicando filtros:', e);
       this.filteredTickets = [];
+      this.cdr.detectChanges();
     }
   }
 
