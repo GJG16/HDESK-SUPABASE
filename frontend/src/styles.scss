@@ -1,0 +1,94 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ─── Fuente Inter: cargada en index.html con preconnect ──── */
+
+/* ─── Reset y fuente base ─────────────────────────────────── */
+@layer base {
+  *, *::before, *::after { box-sizing: border-box; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    @apply m-0 bg-[#F3F4F6] text-slate-800 antialiased;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  }
+
+  ::-webkit-scrollbar { width: 5px; height: 5px; }
+  ::-webkit-scrollbar-track { @apply bg-transparent; }
+  ::-webkit-scrollbar-thumb { @apply bg-slate-300 rounded-full; }
+  ::-webkit-scrollbar-thumb:hover { @apply bg-slate-400; }
+}
+
+/* ─── Componentes reutilizables ───────────────────────────── */
+@layer components {
+
+  /* == Sidebar navigation items == */
+  .nav-item {
+    @apply flex items-center gap-3 px-3 py-2.5 rounded-xl
+           text-slate-500 font-medium cursor-pointer select-none
+           hover:bg-slate-50 hover:text-slate-800
+           transition-all duration-150;
+  }
+  .nav-item.nav-active {
+    @apply bg-blue-50 text-[#2563EB] font-semibold;
+  }
+  .nav-item.nav-active .nav-icon {
+    @apply text-[#2563EB];
+  }
+  .nav-icon {
+    @apply shrink-0 text-current;
+  }
+  .nav-label {
+    @apply text-sm whitespace-nowrap overflow-hidden;
+  }
+
+  /* == KPI Cards == */
+  .kpi-card {
+    @apply bg-white rounded-2xl border border-slate-100 shadow-sm
+           p-5 hover:shadow-md transition-shadow duration-300 cursor-default;
+  }
+  .kpi-label {
+    @apply text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1;
+  }
+  .kpi-value {
+    @apply text-3xl font-extrabold text-slate-900 leading-none mb-2;
+  }
+  .kpi-trend {
+    @apply text-xs font-semibold flex items-center gap-1;
+  }
+  .kpi-icon-wrapper {
+    @apply w-12 h-12 rounded-xl flex items-center justify-center shrink-0;
+  }
+
+  /* == Trend colors == */
+  .trend-up   { @apply text-emerald-600; }
+  .trend-down { @apply text-red-500; }
+
+  /* == Skeleton loader == */
+  .skeleton {
+    @apply bg-slate-200 rounded-lg animate-pulse block;
+  }
+}
+
+/* ─── Animaciones micro ───────────────────────────────────── */
+@layer utilities {
+  .animate-fade-in {
+    animation: fadeIn 0.4s ease-out forwards;
+  }
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Barra de gráfico: crece desde abajo */
+  .bar-grow {
+    animation: growUp 0.8s cubic-bezier(0.22, 0.61, 0.36, 1) forwards;
+    transform-origin: bottom;
+  }
+  @keyframes growUp {
+    from { transform: scaleY(0); }
+    to   { transform: scaleY(1); }
+  }
+}
