@@ -8,9 +8,10 @@ import bcrypt
 import models
 from database import get_db
 
-SECRET_KEY = "super_secret_key_para_pruebas_en_qa"
-ALGORITHM = "HS256"
+import os
 
+SECRET_KEY = os.getenv("JWT_SECRET_KEY", "super_secret_key_para_pruebas_en_qa")
+ALGORITHM = "HS256"
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
 
 def hash_password(password: str) -> str:

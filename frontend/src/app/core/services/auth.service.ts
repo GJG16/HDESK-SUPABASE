@@ -4,7 +4,9 @@ import { Router } from '@angular/router';
 import { Observable, tap, catchError, throwError } from 'rxjs';
 import { SesionUsuario, Usuario, RolUsuario } from '../../models/helpdesk.models';
 
-const API_URL   = 'http://localhost:8000';
+import { environment } from '../../../environments/environment';
+
+const API_URL   = environment.apiUrl;
 const TOKEN_KEY = 'bpo_token';
 const USER_KEY  = 'bpo_user';
 

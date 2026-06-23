@@ -4,6 +4,7 @@ import { RouterModule, RouterOutlet } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
 import { NotificationService } from '../../../core/services/notification.service';
 import { ToastComponent } from '../../../shared/components/toast/toast.component';
+import { ToastService } from '../../../core/services/toast.service';
 
 @Component({
   selector: 'app-especialista-layout',
@@ -69,9 +70,9 @@ import { ToastComponent } from '../../../shared/components/toast/toast.component
         <p class="text-xs text-slate-400">{{ user()?.especialidad }} · Conecta Soluciones BPO</p>
       </div>
       <div class="flex items-center gap-2">
-        <button class="relative p-2.5 text-slate-500 hover:text-emerald-600 hover:bg-emerald-50 rounded-xl transition-colors">
+        <button (click)="toast.info('Info', 'No tienes notificaciones nuevas')" class="relative p-2.5 text-slate-500 hover:text-emerald-600 hover:bg-emerald-50 rounded-xl transition-colors">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
-          <span *ngIf="notifSvc.noLeidas > 0" class="absolute top-2 right-2 w-2 h-2 rounded-full bg-red-500 ring-2 ring-white animate-pulse"></span>
+          <span class="absolute top-2 right-2 w-2 h-2 bg-red-500 border-2 border-white rounded-full"></span>
         </button>
       </div>
     </header>
@@ -81,7 +82,9 @@ import { ToastComponent } from '../../../shared/components/toast/toast.component
 })
 export class EspecialistaLayoutComponent {
   auth     = inject(AuthService);
+  toast    = inject(ToastService);
   notifSvc = inject(NotificationService);
+  router   = inject(Router);
   user     = this.auth.currentUser;
   mobileMenuOpen = signal(false);
   logout() { this.auth.logout(); }

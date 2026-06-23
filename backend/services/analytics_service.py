@@ -52,7 +52,7 @@ def generar_forecasting_picos(db: Session) -> Dict[str, Any]:
     tickets = db.query(models.Ticket.fecha_creacion, models.Ticket.id).all()
     
     if not tickets:
-        return {"mensaje": "Sin datos históricos suficientes."}
+        return {"horas_pico_historicas": []}
         
     df = pd.DataFrame(tickets, columns=["fecha", "id"])
     df['fecha'] = pd.to_datetime(df['fecha'])
