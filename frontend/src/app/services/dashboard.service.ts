@@ -4,7 +4,7 @@ import { Observable } from 'rxjs';
 import {
   DashboardMetrics, MapaCalorResponse, RendimientoResponse,
   Usuario, AreaTecnica, DepartamentoNegocio, AuditoriaItem,
-  UsuarioCreate,
+  UsuarioCreate, ForecastingPicosResponse
 } from '../models/helpdesk.models';
 
 const API_URL = 'http://localhost:8000';
@@ -25,6 +25,11 @@ export class DashboardService {
   // ─── Mapa de Calor por Departamento (Mejora 3 — Pandas) ──
   getMapaCalorDepartamentos(): Observable<MapaCalorResponse> {
     return this.http.get<MapaCalorResponse>(`${API_URL}/reportes/mapa-calor-departamentos`);
+  }
+
+  // ─── Forecasting Picos (Pandas) ───────────────────────────
+  getForecastingPicos(): Observable<ForecastingPicosResponse> {
+    return this.http.get<ForecastingPicosResponse>(`${API_URL}/reportes/forecasting-picos`);
   }
 
   // ─── Usuarios ─────────────────────────────────────────────

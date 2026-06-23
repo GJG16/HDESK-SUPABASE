@@ -79,6 +79,7 @@ export interface Ticket {
   descripcion:                string;
   estado:                     string;
   criticidad:                 string;
+  tipo_solicitud:             string;
   id_area?:                   number;
   nombre_area?:               string;
   id_operador_creador?:       number;
@@ -99,6 +100,7 @@ export interface CrearTicketDto {
   titulo:               string;
   descripcion:          string;
   criticidad:           string;
+  tipo_solicitud:       string;
   id_operador_creador?: number;
 }
 
@@ -170,6 +172,16 @@ export interface RendimientoResponse {
     desviacion_estandar:   number;
     total_resueltos:       number;
   };
+}
+
+export interface ForecastingPicosItem {
+  dia_semana: string;
+  hora: number;
+  volumen_tickets: number;
+}
+
+export interface ForecastingPicosResponse {
+  horas_pico_historicas: ForecastingPicosItem[];
 }
 
 // ─── Auditoría ───────────────────────────────────────────────
