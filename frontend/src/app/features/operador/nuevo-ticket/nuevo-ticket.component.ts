@@ -48,8 +48,20 @@ import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
           </div>
         </div>
 
-        <!-- Fila: Prioridad -->
-        <div class="grid grid-cols-1 gap-4">
+        <!-- Fila: Tipo y Prioridad -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <!-- Tipo de Solicitud (ITIL) -->
+          <div>
+            <label class="block text-sm font-semibold text-slate-700 mb-1.5">
+              Tipo de Solicitud <span class="text-red-500">*</span>
+            </label>
+            <select formControlName="tipo_solicitud" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:border-[#2563EB] focus:ring-2 focus:ring-blue-100 transition-all">
+              <option value="Incidente">Incidente (Falla de un servicio)</option>
+              <option value="Peticion">Petición (Nuevo requerimiento)</option>
+            </select>
+          </div>
+
+          <!-- Prioridad -->
           <div>
             <label class="block text-sm font-semibold text-slate-700 mb-1.5">
               Prioridad sugerida <span class="text-red-500">*</span>
@@ -173,6 +185,7 @@ export class NuevoTicketComponent implements OnInit {
   form = this.fb.group({
     titulo: ['', Validators.required],
     descripcion: ['', [Validators.required, Validators.minLength(20), Validators.maxLength(500)]],
+    tipo_solicitud: ['Incidente', Validators.required],
     prioridad:   [PrioridadTicket.MEDIA, Validators.required],
   });
 
@@ -219,6 +232,7 @@ export class NuevoTicketComponent implements OnInit {
     this.tickets.crearTicket({
       titulo: this.form.value.titulo!,
       descripcion:  this.form.value.descripcion!,
+      tipo_solicitud: this.form.value.tipo_solicitud!,
       criticidad:   this.form.value.prioridad as string,
       id_operador_creador:  uid,
     }).subscribe({
