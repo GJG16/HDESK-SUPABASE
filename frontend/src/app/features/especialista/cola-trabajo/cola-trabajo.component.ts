@@ -79,6 +79,7 @@ import {
             <th class="px-3 py-3.5">ID</th>
             <th class="px-5 py-3.5">Descripción</th>
             <th class="px-3 py-3.5">Origen</th>
+            <th class="px-3 py-3.5">Tipo</th>
             <th class="px-3 py-3.5">Prioridad</th>
             <th class="px-3 py-3.5">Estado</th>
             <th class="px-3 py-3.5">Tiempo</th>
@@ -121,6 +122,8 @@ import {
               </span>
               <span *ngIf="!t.nombre_departamento_origen" class="text-xs text-slate-400">—</span>
             </td>
+
+            <td class="px-3 py-4 text-xs text-slate-500 font-medium">{{ t.tipo_solicitud }}</td>
 
             <td class="px-3 py-4">
               <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-semibold" [ngClass]="getPClass(t.criticidad)">
@@ -185,6 +188,7 @@ import {
           <div class="flex items-center justify-between mb-2">
             <div class="flex items-center gap-1.5">
               <span class="font-mono text-[10px] font-bold text-slate-400">#{{ t.id }}</span>
+              <span class="text-[9px] uppercase font-bold text-slate-400 tracking-wider">{{ t.tipo_solicitud === 'Incidente' ? '🔥 INC' : '📦 PET' }}</span>
               <!-- Semáforo SLA -->
               <span class="w-2 h-2 rounded-full block"
                 [ngClass]="{
@@ -197,6 +201,11 @@ import {
           </div>
           
           <p class="text-xs font-semibold text-slate-800 line-clamp-2 mb-2">{{ t.titulo || t.descripcion }}</p>
+
+          <div *ngIf="t.criticidad === 'Critica' && t.estado === 'Pendiente'" class="mb-2 bg-red-100 border border-red-200 text-red-700 text-[10px] px-2 py-1 rounded-lg font-bold flex items-center gap-1.5 animate-pulse">
+            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            SLA VENCIDO
+          </div>
           
           <div class="flex items-center justify-between mt-3">
             <span class="text-[10px] text-slate-400">{{ t.nombre_area }}</span>

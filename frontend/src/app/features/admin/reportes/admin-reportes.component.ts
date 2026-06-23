@@ -4,7 +4,7 @@ import { RouterModule } from '@angular/router';
 import { Chart, registerables } from 'chart.js';
 import { DashboardService } from '../../../services/dashboard.service';
 import { ToastService } from '../../../core/services/toast.service';
-import { DashboardMetrics, RendimientoResponse } from '../../../models/helpdesk.models';
+import { DashboardMetrics, RendimientoResponse, ForecastingPicosItem } from '../../../models/helpdesk.models';
 
 Chart.register(...registerables);
 
@@ -94,13 +94,43 @@ Chart.register(...registerables);
     </div>
 
     <!-- Top tickets antiguos sin resolver -->
-    <div class="lg:col-span-2 bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+    <div class="lg:col-span-2 bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden flex flex-col">
       <div class="px-5 py-4 border-b border-slate-100">
         <h3 class="text-sm font-bold text-slate-800">Distribución por Criticidad</h3>
         <p class="text-xs text-slate-400">Tickets por nivel de prioridad</p>
       </div>
-      <div class="p-5 flex items-center justify-center">
+      <div class="p-5 flex-1 flex items-center justify-center">
         <canvas #criticidadChart class="max-h-40"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- Fase 3: Forecasting de Picos (Pandas) -->
+  <div class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden mb-8">
+    <div class="px-5 py-4 border-b border-slate-100 bg-gradient-to-r from-blue-50 to-indigo-50">
+      <div class="flex items-center gap-2">
+        <svg class="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+        <h3 class="text-sm font-bold text-slate-800">Predicción de Saturación (Forecasting)</h3>
+      </div>
+      <p class="text-xs text-slate-500 mt-1">Análisis histórico de horas pico de creación de tickets generado con Pandas.</p>
+    </div>
+    
+    <div class="p-5">
+      <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+        <div *ngFor="let pico of forecastingPicos(); let i = index" class="relative bg-slate-50 rounded-xl p-4 border border-slate-200 overflow-hidden group hover:border-indigo-300 hover:shadow-md transition-all">
+          <div class="absolute top-0 right-0 w-16 h-16 bg-indigo-500 rounded-bl-full opacity-10 group-hover:scale-110 transition-transform"></div>
+          <span class="inline-block px-2 py-0.5 bg-indigo-100 text-indigo-700 text-[10px] font-bold rounded mb-2">Top {{i + 1}}</span>
+          <p class="text-lg font-black text-slate-800">{{ pico.dia_semana }}</p>
+          <p class="text-sm font-bold text-slate-500 mb-1">{{ pico.hora }}:00 hs</p>
+          <div class="flex items-center gap-1.5 mt-2 pt-2 border-t border-slate-200/60">
+            <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14"/></svg>
+            <span class="text-xs font-semibold text-slate-600">{{ pico.volumen_tickets }} tickets prom.</span>
+          </div>
+        </div>
+        
+        <div *ngIf="forecastingPicos().length === 0 && !isLoading()" class="col-span-full py-8 text-center text-sm text-slate-400 italic">
+          Aún no hay suficientes datos históricos para el modelo predictivo.
+        </div>
       </div>
     </div>
   </div>
@@ -122,6 +152,7 @@ export class AdminReportesComponent implements OnInit, AfterViewInit, OnDestroy 
   kpis = signal<{ label: string; valor: string; color: string; sub: string }[]>([]);
 
   tecnicosRanking = signal<{ nombre: string; avatar: string; area: string; ttr: number }[]>([]);
+  forecastingPicos = signal<ForecastingPicosItem[]>([]);
 
   ngOnInit() {
     this.loadData();
@@ -164,6 +195,16 @@ export class AdminReportesComponent implements OnInit, AfterViewInit, OnDestroy 
         }
       },
       error: () => {},
+    });
+
+    // Cargar forecasting
+    this.svc.getForecastingPicos().subscribe({
+      next: (res) => {
+        if (res.horas_pico_historicas) {
+          this.forecastingPicos.set(res.horas_pico_historicas);
+        }
+      },
+      error: () => {}
     });
   }
 

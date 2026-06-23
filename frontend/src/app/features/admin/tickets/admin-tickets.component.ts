@@ -86,6 +86,7 @@ import {
               Descripción <span *ngIf="sortBy() === 'titulo'">{{ sortOrder() === 'asc' ? '↑' : '↓' }}</span>
             </th>
             <th class="px-5 py-3.5">Prioridad</th>
+            <th class="px-5 py-3.5">Tipo</th>
             <th class="px-5 py-3.5">Estado</th>
             <th class="px-5 py-3.5">Área</th>
             <th class="px-5 py-3.5">Operador</th>
@@ -106,6 +107,7 @@ import {
               <td class="px-5 py-4"><span class="font-mono text-xs font-bold text-slate-400 bg-slate-100 px-2 py-0.5 rounded">#{{ t.id }}</span></td>
               <td class="px-5 py-4 max-w-xs"><p class="font-medium text-slate-800 truncate">{{ t.titulo || t.descripcion }}</p></td>
               <td class="px-5 py-4"><span class="px-2 py-0.5 rounded-md text-xs font-semibold" [ngClass]="getPClass(t.criticidad)">{{ t.criticidad }}</span></td>
+              <td class="px-5 py-4 text-xs text-slate-500 font-medium">{{ t.tipo_solicitud }}</td>
               <td class="px-5 py-4">
                 <select class="text-xs font-semibold px-2 py-1 rounded-full border-0 cursor-pointer outline-none transition-colors"
                   [ngClass]="getEClass(t.estado)"
@@ -186,10 +188,19 @@ import {
           (click)="verDetalle(t.id)"
           class="bg-white rounded-xl border border-slate-100 p-3.5 hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer group">
           <div class="flex items-center justify-between mb-2">
-            <span class="font-mono text-[10px] font-bold text-slate-400">#{{ t.id }}</span>
-            <span class="px-1.5 py-0.5 rounded text-[10px] font-bold" [ngClass]="getPClass(t.criticidad)">{{ t.criticidad }}</span>
+            <div class="flex items-center gap-1.5">
+              <span class="font-mono text-[10px] font-bold text-slate-400">#{{ t.id }}</span>
+              <span class="text-[9px] uppercase font-bold text-slate-400 tracking-wider">{{ t.tipo_solicitud === 'Incidente' ? '🔥 INC' : '📦 PET' }}</span>
+            </div>
+            <span class="px-1.5 py-0.5 rounded text-[10px] font-bold" [ngClass]="getPClass(t.criticidad)">
+              {{ t.criticidad }}
+            </span>
           </div>
           <p class="text-xs font-semibold text-slate-800 line-clamp-2 mb-2">{{ t.titulo || t.descripcion }}</p>
+          <div *ngIf="t.criticidad === 'Critica' && t.estado === 'Pendiente'" class="mb-2 bg-red-100 border border-red-200 text-red-700 text-[10px] px-2 py-1 rounded-lg font-bold flex items-center gap-1.5 animate-pulse">
+            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            SLA VENCIDO
+          </div>
           <div class="flex items-center justify-between">
             <span class="text-[10px] text-slate-400">{{ t.nombre_area }}</span>
             <div *ngIf="t.nombre_especialista" class="w-5 h-5 rounded-full bg-slate-200 text-[8px] font-bold text-slate-600 flex items-center justify-center"
