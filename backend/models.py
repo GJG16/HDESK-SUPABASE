@@ -73,6 +73,7 @@ class Ticket(Base):
     descripcion = Column(Text, nullable=False)
     estado = Column(String(50), default="Pendiente", nullable=False)
     criticidad = Column(String(50), nullable=False)
+    tipo_solicitud = Column(String(50), default="Incidente", nullable=False)
 
     id_area = Column(Integer, ForeignKey("areas_tecnicas.id"), nullable=True)
     id_operador_creador = Column(Integer, ForeignKey("usuarios.id"), nullable=True)
@@ -295,6 +296,7 @@ class TicketCreate(BaseModel):
     titulo: str
     descripcion: str
     criticidad: str
+    tipo_solicitud: str = "Incidente"
     id_operador_creador: Optional[int] = None
 
 class TicketPatch(BaseModel):
@@ -310,6 +312,7 @@ class TicketResponse(BaseModel):
     descripcion: str
     estado: str
     criticidad: str
+    tipo_solicitud: str
     id_area: Optional[int] = None
     id_operador_creador: Optional[int] = None
     id_especialista: Optional[int] = None
