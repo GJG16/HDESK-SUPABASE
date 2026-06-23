@@ -46,6 +46,7 @@ CREATE TABLE tickets (
     descripcion TEXT NOT NULL,
     estado VARCHAR(50) NOT NULL DEFAULT 'Pendiente' CHECK (estado IN ('Pendiente', 'En Proceso', 'Resuelto', 'Cancelado')),
     criticidad VARCHAR(50) NOT NULL CHECK (criticidad IN ('Baja', 'Media', 'Alta', 'Critica')),
+    tipo_solicitud VARCHAR(50) NOT NULL DEFAULT 'Incidente' CHECK (tipo_solicitud IN ('Incidente', 'Peticion')),
     id_area INTEGER REFERENCES areas_tecnicas(id) ON DELETE SET NULL,
     id_operador_creador INTEGER REFERENCES usuarios(id) ON DELETE SET NULL,
     id_especialista INTEGER REFERENCES usuarios(id) ON DELETE SET NULL,
