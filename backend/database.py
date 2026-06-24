@@ -14,8 +14,14 @@ load_dotenv()
 # URL de ejemplo simulada para propósitos de prueba
 SQLALCHEMY_DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://usuario:password@localhost/helpdesk")
 
-# Crear el motor de SQLAlchemy
-engine = create_engine(SQLALCHEMY_DATABASE_URL)
+# Crear el motor de SQLAlchemy con configuración de pool robusta para producción
+engine = create_engine(
+    SQLALCHEMY_DATABASE_URL,
+    pool_pre_ping=True,       # Verifica conexiones antes de usarlas (evita errores por conexiones muertas)
+    pool_size=5,              # Número de conexiones persistentes en el pool
+    max_overflow=10,          # Conexiones adicionales permitidas temporalmente
+    pool_recycle=300,         # Reciclar conexiones cada 5 minutos (evita timeouts de Supabase)
+)
 
 # Crear la fábrica de sesiones
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)

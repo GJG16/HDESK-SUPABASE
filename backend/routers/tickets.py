@@ -7,8 +7,7 @@ import hashlib
 import time
 
 import models
-from database import get_db, SessionLocal
-from core.security import get_current_user
+from database import get_db
 from services.ticket_service import (
     enriquecer_ticket, motor_de_triaje, monitor_sla_escalation, 
     registrar_auditoria, registrar_historial_ticket
@@ -20,6 +19,20 @@ router = APIRouter(
 )
 
 idempotency_cache = {}
+IDEMPOTENCY_TTL = 10  # segundos de ventana anti-duplicado
+IDEMPOTENCY_MAX_SIZE = 500  # máximo de entradas en cache
+
+def _limpiar_cache_idempotencia():
+    """Elimina entradas expiradas del cache de idempotencia."""
+    now = time.time()
+    expiradas = [k for k, v in idempotency_cache.items() if (now - v) > IDEMPOTENCY_TTL]
+    for k in expiradas:
+        del idempotency_cache[k]
+    # Si aún excede el tamaño máximo, eliminar las más antiguas
+    if len(idempotency_cache) > IDEMPOTENCY_MAX_SIZE:
+        sorted_keys = sorted(idempotency_cache, key=idempotency_cache.get)
+        for k in sorted_keys[:len(idempotency_cache) - IDEMPOTENCY_MAX_SIZE]:
+            del idempotency_cache[k]
 
 @router.get("/", response_model=List[models.TicketResponse])
 def listar_tickets(
@@ -56,7 +69,6 @@ def listar_tickets(
         sort_column = models.Ticket.fecha_creacion
     query = query.order_by(sort_column.desc() if sort_order == "desc" else sort_column.asc())
 
-    total = query.count()
     tickets = query.offset(skip).limit(limit).all()
     return [enriquecer_ticket(t, db) for t in tickets]
 
@@ -73,9 +85,10 @@ def crear_ticket_con_triaje(ticket_in: models.TicketCreate, background_tasks: Ba
     """
     Endpoint que recibe un ticket y utiliza el Motor de Triaje.
     """
+    _limpiar_cache_idempotencia()
     payload_hash = hashlib.md5(f"{ticket_in.titulo}-{ticket_in.descripcion}".encode()).hexdigest()
     now = time.time()
-    if payload_hash in idempotency_cache and (now - idempotency_cache[payload_hash]) < 2:
+    if payload_hash in idempotency_cache and (now - idempotency_cache[payload_hash]) < IDEMPOTENCY_TTL:
         raise HTTPException(status_code=409, detail="Petición duplicada (Doble Submit detectado).")
     idempotency_cache[payload_hash] = now
 
@@ -289,12 +302,14 @@ def crear_comentario(ticket_id: int, data: models.ComentarioCreate, db: Session 
 def obtener_tickets_criticos_pendientes(db: Session = Depends(get_db)):
     """Endpoint que extrae tickets y usa Prog. Funcional."""
     todos_los_tickets = db.query(models.Ticket).all()
-    es_critico_pendiente = lambda t: t.estado == "Pendiente" and t.criticidad in ["Alta", "Critica"]
+    def es_critico_pendiente(t):
+        return t.estado == "Pendiente" and t.criticidad in ["Alta", "Critica"]
+        
     tickets_filtrados = list(filter(es_critico_pendiente, todos_los_tickets))
 
-    def destacar_titulo(t):
-        t.titulo = f"[URGENTE] {t.titulo.upper()}"
-        return t
-
-    tickets_transformados = list(map(destacar_titulo, tickets_filtrados))
-    return [enriquecer_ticket(t, db) for t in tickets_transformados]
+    resultados = []
+    for t in tickets_filtrados:
+        data = enriquecer_ticket(t, db)
+        data["titulo"] = f"[URGENTE] {data['titulo'].upper()}"
+        resultados.append(data)
+    return resultados

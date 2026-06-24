@@ -8,3 +8,10 @@ __pycache__/
 venv/
 .venv/
 *.egg-info/
+
+# ─── Archivos temporales / de prueba ──────────────────────
+test_qa.db
+*.db
+
+# ─── Uploads de usuarios ─────────────────────────────────
+uploads/

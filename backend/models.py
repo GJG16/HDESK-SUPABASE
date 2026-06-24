@@ -1,9 +1,9 @@
-# pyrefly: ignore [missing-import]
+
 from sqlalchemy import Column, Integer, String, Text, ForeignKey, Numeric, TIMESTAMP, Boolean
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from pydantic import BaseModel, ConfigDict, model_validator
-from typing import Optional, List
+from typing import Optional
 from datetime import datetime
 from database import Base
 

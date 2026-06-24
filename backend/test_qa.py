@@ -13,9 +13,9 @@ sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='repla
 # Setup path so it finds main.py
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
-from main import app, get_db
+from main import app
 import models
-from database import Base
+from database import Base, get_db
 
 # Setup Test DB
 SQLALCHEMY_DATABASE_URL = "sqlite:///./test_qa.db"

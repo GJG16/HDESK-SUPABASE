@@ -48,7 +48,7 @@ def listar_macros(id_area: Optional[int] = None, db: Session = Depends(get_db)):
 
 @router.post("/macros/", response_model=models.MacroResponse)
 def crear_macro(data: models.MacroCreate, db: Session = Depends(get_db), admin: models.Usuario = Depends(get_current_admin)):
-    macro = models.Macro(**data.dict())
+    macro = models.Macro(**data.model_dump())
     db.add(macro)
     db.commit()
     db.refresh(macro)
@@ -65,7 +65,7 @@ def listar_kb(q: Optional[str] = None, db: Session = Depends(get_db)):
 
 @router.post("/kb/", response_model=models.ArticuloKBResponse)
 def crear_articulo_kb(data: models.ArticuloKBCreate, db: Session = Depends(get_db), admin: models.Usuario = Depends(get_current_admin)):
-    articulo = models.ArticuloKB(**data.dict())
+    articulo = models.ArticuloKB(**data.model_dump())
     db.add(articulo)
     db.commit()
     db.refresh(articulo)
@@ -82,7 +82,7 @@ def crear_csat(id_ticket: int, data: models.CSATCreate, db: Session = Depends(ge
     if existente:
         raise HTTPException(400, "El ticket ya ha sido calificado")
 
-    csat = models.CalificacionCSAT(id_ticket=id_ticket, **data.dict())
+    csat = models.CalificacionCSAT(id_ticket=id_ticket, **data.model_dump())
     db.add(csat)
     db.commit()
     db.refresh(csat)
@@ -96,9 +96,19 @@ def obtener_csat(id_ticket: int, db: Session = Depends(get_db)):
     return csat
 
 # ─── Adjuntos (Uploads) ─────────────────────
-UPLOAD_DIR = "uploads"
-if not os.path.exists(UPLOAD_DIR):
-    os.makedirs(UPLOAD_DIR)
+UPLOAD_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "uploads")
+os.makedirs(UPLOAD_DIR, exist_ok=True)
+
+MAX_UPLOAD_SIZE = 10 * 1024 * 1024  # 10 MB
+ALLOWED_MIME_TYPES = {
+    "image/jpeg", "image/png", "image/gif", "image/webp",
+    "application/pdf",
+    "text/plain", "text/csv",
+    "application/zip",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    "application/msword", "application/vnd.ms-excel",
+}
 
 @router.post("/upload/", response_model=models.AdjuntoResponse)
 def subir_adjunto(
@@ -111,10 +121,20 @@ def subir_adjunto(
     ticket = db.query(models.Ticket).filter(models.Ticket.id == id_ticket).first()
     if not ticket:
         raise HTTPException(404, "Ticket no encontrado")
-        
+
+    # Validar tipo MIME
+    if file.content_type and file.content_type not in ALLOWED_MIME_TYPES:
+        raise HTTPException(400, f"Tipo de archivo no permitido: {file.content_type}")
+
+    # Validar tamaño (leer y verificar)
+    contents = file.file.read()
+    if len(contents) > MAX_UPLOAD_SIZE:
+        raise HTTPException(400, f"El archivo excede el tamaño máximo de {MAX_UPLOAD_SIZE // (1024*1024)} MB")
+    file.file.seek(0)
+
     file_location = os.path.join(UPLOAD_DIR, f"{int(time.time())}_{file.filename}")
     with open(file_location, "wb+") as file_object:
-        shutil.copyfileobj(file.file, file_object)
+        file_object.write(contents)
 
     size = os.path.getsize(file_location)
 

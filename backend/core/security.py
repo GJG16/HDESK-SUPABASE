@@ -1,3 +1,5 @@
+import os
+import logging
 from fastapi import Depends, HTTPException
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
@@ -8,9 +10,13 @@ import bcrypt
 import models
 from database import get_db
 
-import os
+logger = logging.getLogger(__name__)
 
-SECRET_KEY = os.getenv("JWT_SECRET_KEY", "super_secret_key_para_pruebas_en_qa")
+SECRET_KEY = os.getenv("JWT_SECRET_KEY", "")
+if not SECRET_KEY:
+    SECRET_KEY = "super_secret_key_para_pruebas_en_qa"
+    logger.warning("⚠️  JWT_SECRET_KEY no está definida en .env — usando clave por defecto (INSEGURO para producción)")
+
 ALGORITHM = "HS256"
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
 

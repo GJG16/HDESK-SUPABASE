@@ -1,5 +1,7 @@
+import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 import models
 import database
 
@@ -8,14 +10,22 @@ models.Base.metadata.create_all(bind=database.engine)
 
 app = FastAPI(title="Helpdesk Multiparadigma (Clean Architecture)", version="2.1.0")
 
-# CORS Middleware
+# CORS Middleware — Orígenes configurables desde variable de entorno
+cors_origins_str = os.getenv("CORS_ORIGINS", "http://localhost:4200")
+cors_origins = [origin.strip() for origin in cors_origins_str.split(",") if origin.strip()]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:4200"],
+    allow_origins=cors_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Servir archivos adjuntos subidos
+uploads_dir = os.path.join(os.path.dirname(__file__), "uploads")
+os.makedirs(uploads_dir, exist_ok=True)
+app.mount("/uploads", StaticFiles(directory=uploads_dir), name="uploads")
 
 # Importar y registrar routers
 from routers import auth, tickets, usuarios, reportes, configuracion

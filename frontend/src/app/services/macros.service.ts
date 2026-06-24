@@ -1,8 +1,9 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Macro, MacroCreate } from '../models/helpdesk.models';
+import { environment } from '../../environments/environment';
 
-const API_URL = 'http://localhost:8000';
+const API_URL = environment.apiUrl;
 
 @Injectable({ providedIn: 'root' })
 export class MacrosService {

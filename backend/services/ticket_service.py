@@ -109,26 +109,30 @@ async def monitor_sla_escalation(ticket_id: int):
     Simula un Engine de SLAs en Background.
     Espera 8 horas y escala el ticket a Crítica si sigue sin atención.
     """
-    await asyncio.sleep(8 * 3600)  
-    
+    try:
+        await asyncio.sleep(8 * 3600)
+    except asyncio.CancelledError:
+        return
+
     db = database.SessionLocal()
     try:
         ticket = db.query(models.Ticket).filter(models.Ticket.id == ticket_id).first()
         if ticket and ticket.estado == "Pendiente":
-            estado_anterior = ticket.estado
             criticidad_anterior = ticket.criticidad
-            
+
             ticket.criticidad = "Critica"
             ticket.fecha_actualizacion = datetime.now(timezone.utc)
             db.commit()
-            
+
             registrar_auditoria(db, None, "SLA_ESCALADO", f"Ticket #{ticket_id}",
                                f"Criticidad escalada de {criticidad_anterior} a Critica por SLA")
-            
+
             registrar_historial_ticket(
                 db, ticket_id, None,
-                estado_anterior, ticket.estado,
+                ticket.estado, ticket.estado,
                 "Escalado automático por vencimiento de SLA (8 horas sin atención)"
             )
+    except Exception:
+        db.rollback()
     finally:
         db.close()
