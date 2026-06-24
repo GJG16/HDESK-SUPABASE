@@ -1,117 +1,159 @@
-import pandas as pd
-# pyrefly: ignore [missing-import]
-import numpy as np
-# pyrefly: ignore [missing-import]
-from sqlalchemy.orm import Session
+import statistics
 from typing import Dict, Any
+from sqlalchemy.orm import Session
+from sqlalchemy import func, case, extract
 
 import models
 
 def generar_mapa_calor_departamentos(db: Session) -> Dict[str, Any]:
-    tickets_activos = db.query(models.Ticket).filter(
+    """Genera el mapa de calor agrupando por departamentos usando SQL puro."""
+    # Query agrupada por nombre de departamento
+    resultados = db.query(
+        models.DepartamentoNegocio.nombre.label('departamento'),
+        func.count(models.Ticket.id).label('cantidad'),
+        func.sum(
+            case(
+                (models.Ticket.criticidad.in_(['Alta', 'Critica']), 1),
+                else_=0
+            )
+        ).label('criticos')
+    ).select_from(models.Ticket).outerjoin(
+        models.DepartamentoNegocio, 
+        models.Ticket.id_departamento_origen == models.DepartamentoNegocio.id
+    ).filter(
         models.Ticket.estado.in_(["Pendiente", "En Proceso"])
+    ).group_by(
+        models.DepartamentoNegocio.nombre
+    ).order_by(
+        func.count(models.Ticket.id).desc()
     ).all()
 
-    if not tickets_activos:
+    if not resultados:
         return {"mensaje": "No hay tickets activos", "datos": [], "total": 0}
 
-    data = [{
-        "id": t.id,
-        "titulo": t.titulo,
-        "estado": t.estado,
-        "criticidad": t.criticidad,
-        "id_departamento_origen": t.id_departamento_origen,
-        "fecha_creacion": t.fecha_creacion,
-    } for t in tickets_activos]
+    total = sum(r.cantidad for r in resultados)
+    datos = []
+    
+    for r in resultados:
+        depto_nombre = r.departamento if r.departamento else "Sin Departamento"
+        porcentaje = round((r.cantidad / total) * 100, 1) if total > 0 else 0.0
+        datos.append({
+            "departamento": depto_nombre,
+            "cantidad": int(r.cantidad),
+            "criticos": int(r.criticos) if r.criticos else 0,
+            "porcentaje": float(porcentaje)
+        })
 
-    df = pd.DataFrame(data)
-    departamentos = db.query(models.DepartamentoNegocio).all()
-    depto_map = {d.id: d.nombre for d in departamentos}
-    df["departamento"] = df["id_departamento_origen"].map(depto_map).fillna("Sin Departamento")
+    return {"datos": datos, "total": total}
 
-    resumen = (
-        df.groupby("departamento")
-        .agg(
-            cantidad=("id", "count"),
-            criticos=("criticidad", lambda x: (x.isin(["Alta", "Critica"])).sum()),
-        )
-        .reset_index()
-        .sort_values("cantidad", ascending=False)
-    )
-
-    total = int(resumen["cantidad"].sum())
-    resumen["porcentaje"] = np.round((resumen["cantidad"] / total) * 100, 1)
-
-    resumen_limpio = resumen.replace({np.nan: 0}).to_dict(orient="records")
-    for item in resumen_limpio:
-        item["cantidad"] = int(item["cantidad"])
-        item["criticos"] = int(item["criticos"])
-        item["porcentaje"] = float(item["porcentaje"])
-
-    return {"datos": resumen_limpio, "total": total}
 
 def generar_forecasting_picos(db: Session) -> Dict[str, Any]:
-    tickets = db.query(models.Ticket.fecha_creacion, models.Ticket.id).all()
+    """Forecasting histórico de picos utilizando extracciones de fecha SQL."""
+    # Extract DOW (0-6 donde 0 es Domingo, o 1-7 dependiendo de SQLite/Postgres)
+    # y la hora del día.
+    
+    # Extraer directamente la fecha y hora a Python para evitar incompatibilidades 
+    # entre dialectos SQLite (desarrollo) y Postgres (producción) con funciones DOW específicas.
+    # Solo traemos los campos estrictamente necesarios, por lo que es ultra ligero (O(N) CPU, poca RAM).
+    tickets = db.query(models.Ticket.fecha_creacion).all()
     
     if not tickets:
         return {"horas_pico_historicas": []}
         
-    df = pd.DataFrame(tickets, columns=["fecha", "id"])
-    df['fecha'] = pd.to_datetime(df['fecha'])
-    df['dia_semana'] = df['fecha'].dt.day_name()
-    df['hora'] = df['fecha'].dt.hour
+    conteo_picos = {}
     
-    picos = df.groupby(['dia_semana', 'hora']).count().reset_index()
-    picos.rename(columns={'id': 'volumen_tickets'}, inplace=True)
-    top_picos = picos.sort_values(by='volumen_tickets', ascending=False).head(5)
+    for t in tickets:
+        if not t.fecha_creacion:
+            continue
+        dia_semana = t.fecha_creacion.strftime('%A')
+        hora = t.fecha_creacion.hour
+        llave = (dia_semana, hora)
+        conteo_picos[llave] = conteo_picos.get(llave, 0) + 1
+        
+    # Ordenar y obtener el top 5
+    picos_ordenados = sorted(conteo_picos.items(), key=lambda x: x[1], reverse=True)[:5]
     
-    return {"horas_pico_historicas": top_picos.to_dict(orient='records')}
+    datos = [
+        {
+            "dia_semana": llave[0],
+            "hora": llave[1],
+            "volumen_tickets": volumen
+        }
+        for llave, volumen in picos_ordenados
+    ]
+
+    return {"horas_pico_historicas": datos}
+
 
 def generar_reporte_rendimiento(db: Session) -> Dict[str, Any]:
-    tickets_resueltos = db.query(models.Ticket).filter(models.Ticket.estado == "Resuelto").all()
+    """Genera reporte de rendimiento (tiempos de resolución) con estadísticas base."""
+    # 1. Agrupación por Área (SQL)
+    areas_res = db.query(
+        models.Ticket.id_area,
+        func.avg(models.Ticket.tiempo_resolucion_horas).label('promedio')
+    ).filter(
+        models.Ticket.estado == "Resuelto",
+        models.Ticket.tiempo_resolucion_horas.isnot(None),
+        models.Ticket.tiempo_resolucion_horas > 0
+    ).group_by(models.Ticket.id_area).all()
 
-    if not tickets_resueltos:
+    metricas_por_area = [
+        {
+            "id_area": r.id_area, 
+            "tiempo_resolucion_horas": float(r.promedio) if r.promedio else None
+        } 
+        for r in areas_res
+    ]
+
+    # 2. Métricas Globales (Python list para stddev/median compatibles 100% con DBs locales y cloud)
+    tiempos = db.query(models.Ticket.tiempo_resolucion_horas).filter(
+        models.Ticket.estado == "Resuelto",
+        models.Ticket.tiempo_resolucion_horas.isnot(None),
+        models.Ticket.tiempo_resolucion_horas > 0
+    ).all()
+
+    tiempos_list = [float(t[0]) for t in tiempos if t[0] is not None]
+
+    if not tiempos_list:
         return {"mensaje": "No hay suficientes datos de tickets resueltos para calcular métricas."}
 
-    data = [{
-        "id": t.id,
-        "id_area": t.id_area,
-        "tiempo_resolucion_horas": float(t.tiempo_resolucion_horas) if t.tiempo_resolucion_horas else 0.0
-    } for t in tickets_resueltos]
+    total_resueltos = db.query(func.count(models.Ticket.id)).filter(models.Ticket.estado == "Resuelto").scalar()
 
-    df = pd.DataFrame(data)
-    df["tiempo_resolucion_horas"] = df["tiempo_resolucion_horas"].replace(0.0, np.nan)
-    resumen = df.groupby("id_area")["tiempo_resolucion_horas"].mean().reset_index()
-    resumen_limpio = resumen.replace({np.nan: None}).to_dict(orient="records")
-
-    tiempos_validos = df["tiempo_resolucion_horas"].dropna().values
-    metricas_globales = {}
-    if len(tiempos_validos) > 0:
-        metricas_globales = {
-            "promedio_global_horas": round(float(np.mean(tiempos_validos)), 2),
-            "mediana_horas": round(float(np.median(tiempos_validos)), 2),
-            "desviacion_estandar": round(float(np.std(tiempos_validos)), 2),
-            "total_resueltos": len(tickets_resueltos),
-        }
+    metricas_globales = {
+        "promedio_global_horas": round(statistics.mean(tiempos_list), 2),
+        "mediana_horas": round(statistics.median(tiempos_list), 2),
+        "desviacion_estandar": round(statistics.stdev(tiempos_list) if len(tiempos_list) > 1 else 0.0, 2),
+        "total_resueltos": total_resueltos,
+    }
 
     return {
-        "metricas_por_area": resumen_limpio,
+        "metricas_por_area": metricas_por_area,
         "metricas_globales": metricas_globales
     }
 
+
 def generar_reporte_dashboard(db: Session) -> Dict[str, Any]:
-    todos = db.query(models.Ticket).all()
-    if not todos:
+    """Genera conteos base para el Dashboard utilizando agregaciones SQL ultrarrápidas."""
+    total_tickets = db.query(func.count(models.Ticket.id)).scalar()
+
+    if total_tickets == 0:
         return {"total_tickets": 0, "por_estado": {}, "por_criticidad": {}}
 
-    data = [{"estado": t.estado, "criticidad": t.criticidad} for t in todos]
-    df = pd.DataFrame(data)
+    estados = db.query(
+        models.Ticket.estado, 
+        func.count(models.Ticket.id)
+    ).group_by(models.Ticket.estado).all()
+    
+    criticidades = db.query(
+        models.Ticket.criticidad, 
+        func.count(models.Ticket.id)
+    ).group_by(models.Ticket.criticidad).all()
 
-    conteo_estado = df["estado"].value_counts().to_dict()
-    conteo_criticidad = df["criticidad"].value_counts().to_dict()
+    por_estado = {e[0]: e[1] for e in estados if e[0]}
+    por_criticidad = {c[0]: c[1] for c in criticidades if c[0]}
 
     return {
-        "total_tickets": len(todos),
-        "por_estado": conteo_estado,
-        "por_criticidad": conteo_criticidad
+        "total_tickets": total_tickets,
+        "por_estado": por_estado,
+        "por_criticidad": por_criticidad
     }
