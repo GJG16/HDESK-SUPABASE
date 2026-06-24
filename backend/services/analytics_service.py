@@ -137,7 +137,7 @@ def generar_reporte_dashboard(db: Session) -> Dict[str, Any]:
     total_tickets = db.query(func.count(models.Ticket.id)).scalar()
 
     if total_tickets == 0:
-        return {"total_tickets": 0, "por_estado": {}, "por_criticidad": {}}
+        return {"total_tickets": 0, "por_estado": {}, "por_criticidad": {}, "por_area": {}}
 
     estados = db.query(
         models.Ticket.estado, 
@@ -149,11 +149,20 @@ def generar_reporte_dashboard(db: Session) -> Dict[str, Any]:
         func.count(models.Ticket.id)
     ).group_by(models.Ticket.criticidad).all()
 
+    areas = db.query(
+        models.AreaTecnica.nombre_area,
+        func.count(models.Ticket.id)
+    ).select_from(models.Ticket).outerjoin(
+        models.AreaTecnica, models.Ticket.id_area == models.AreaTecnica.id
+    ).group_by(models.AreaTecnica.nombre_area).all()
+
     por_estado = {e[0]: e[1] for e in estados if e[0]}
     por_criticidad = {c[0]: c[1] for c in criticidades if c[0]}
+    por_area = {(a[0] if a[0] else "Sin Área"): a[1] for a in areas}
 
     return {
         "total_tickets": total_tickets,
         "por_estado": por_estado,
-        "por_criticidad": por_criticidad
+        "por_criticidad": por_criticidad,
+        "por_area": por_area
     }
