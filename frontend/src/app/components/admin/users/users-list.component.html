@@ -1,0 +1,107 @@
+<div class="flex flex-col h-full space-y-6">
+  <!-- Header Section -->
+  <div class="flex items-center justify-between">
+    <div>
+      <h1 class="text-2xl font-bold text-slate-900 dark:text-white">Gestión de Usuarios</h1>
+      <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">Control de accesos y roles del sistema operativo.</p>
+    </div>
+  </div>
+
+  <!-- Data Table Container -->
+  <div class="bg-white dark:bg-slate-950 rounded-lg shadow-sm border border-slate-200 dark:border-slate-800 overflow-hidden flex flex-col flex-1">
+    <div class="flex-1 overflow-x-auto">
+      
+      <!-- Skeleton Loading State -->
+      <div *ngIf="loading" class="p-6 space-y-4">
+        <app-skeleton type="rectangular" height="3rem" *ngFor="let i of [1,2,3,4,5]"></app-skeleton>
+      </div>
+
+      <!-- Tabla Principal -->
+      <table *ngIf="!loading && users.length > 0" class="min-w-full divide-y divide-slate-200 dark:divide-slate-800">
+        <thead class="bg-slate-50 dark:bg-slate-900/50">
+          <tr>
+            <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Nombre / Email</th>
+            <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Departamento</th>
+            <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Rol</th>
+            <th scope="col" class="px-6 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">Acciones</th>
+          </tr>
+        </thead>
+        <tbody class="bg-white dark:bg-slate-950 divide-y divide-slate-200 dark:divide-slate-800">
+          <tr *ngFor="let user of users" class="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors group">
+            
+            <td class="px-6 py-4 whitespace-nowrap">
+              <div class="flex items-center">
+                <div class="flex-shrink-0 h-10 w-10 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center font-bold text-slate-600 dark:text-slate-300">
+                  {{ user.nombre.substring(0, 2).toUpperCase() }}
+                </div>
+                <div class="ml-4">
+                  <div class="text-sm font-medium text-slate-900 dark:text-white">{{ user.nombre }}</div>
+                  <div class="text-xs text-slate-500">{{ user.email }}</div>
+                </div>
+              </div>
+            </td>
+
+            <td class="px-6 py-4 whitespace-nowrap">
+              <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-300">
+                {{ user.departamento || 'No asignado' }}
+              </span>
+            </td>
+
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500">
+              <div *ngIf="editingUserId !== user.id" class="flex items-center space-x-2">
+                <span class="px-2.5 py-0.5 rounded-full text-xs font-medium border"
+                  [ngClass]="{
+                    'bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-900/30 dark:text-purple-400 dark:border-purple-800/50': user.rol === 'admin',
+                    'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800/50': user.rol === 'agent',
+                    'bg-slate-50 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700': user.rol === 'user'
+                  }">
+                  {{ user.rol | uppercase }}
+                </span>
+                <button (click)="startEditingRole(user)" class="text-blue-500 hover:text-blue-700 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
+                </button>
+              </div>
+
+              <!-- Modo Edición de Rol -->
+              <div *ngIf="editingUserId === user.id" class="flex items-center space-x-2">
+                <select [(ngModel)]="editRoleValue" class="block w-28 pl-2 pr-8 py-1 text-xs border border-slate-300 dark:border-slate-700 rounded-md bg-white dark:bg-slate-900 text-slate-900 dark:text-white">
+                  <option value="user">USER</option>
+                  <option value="agent">AGENT</option>
+                  <option value="admin">ADMIN</option>
+                </select>
+                <button (click)="saveRole(user)" class="text-emerald-500 hover:text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20 p-1 rounded">
+                  <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
+                </button>
+                <button (click)="editingUserId = null" class="text-slate-400 hover:text-slate-500 bg-slate-100 dark:bg-slate-800 p-1 rounded">
+                  <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                </button>
+              </div>
+            </td>
+
+            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+              <button (click)="deleteUser(user)" class="text-red-500 hover:text-red-700 p-2 rounded-md hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors opacity-0 group-hover:opacity-100" title="Eliminar cuenta">
+                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div *ngIf="!loading && users.length === 0" class="flex flex-col items-center justify-center p-12 text-center">
+        <p class="text-slate-500">No se encontraron usuarios.</p>
+      </div>
+
+    </div>
+    
+    <!-- Paginación -->
+    <div class="px-6 py-3 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 flex items-center justify-between">
+      <span class="text-sm text-slate-500">Página {{ page }} de {{ totalPages }}</span>
+      <div class="space-x-2">
+        <button [disabled]="page === 1" (click)="changePage(page - 1)" class="px-3 py-1 border border-slate-300 dark:border-slate-700 rounded bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 disabled:opacity-50 text-sm">Anterior</button>
+        <button [disabled]="page === totalPages" (click)="changePage(page + 1)" class="px-3 py-1 border border-slate-300 dark:border-slate-700 rounded bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 disabled:opacity-50 text-sm">Siguiente</button>
+      </div>
+    </div>
+  </div>
+</div>
