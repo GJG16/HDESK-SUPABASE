@@ -3,37 +3,39 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
 
-export interface KBArticle {
-  id?: string;
+export interface KbArticle {
+  id: string;
   titulo: string;
   contenido: string;
   categoria: string;
-  vistas?: number;
-  fecha_creacion?: Date;
-  fecha_actualizacion?: Date;
+  etiquetas: string[];
+  autor_id: string;
+  vistas: number;
+  fecha_creacion: string;
+  fecha_actualizacion: string;
 }
 
 @Injectable({
   providedIn: 'root'
 })
 export class KbService {
-  private apiUrl = environment.apiUrl;
+  private apiUrl = environment.apiUrl + '/kb';
 
   constructor(private http: HttpClient) {}
 
-  getArticles(): Observable<KBArticle[]> {
-    return this.http.get<KBArticle[]>(`${this.apiUrl}/kb/`);
+  getArticles(): Observable<KbArticle[]> {
+    return this.http.get<KbArticle[]>(this.apiUrl);
   }
 
-  getArticle(id: string): Observable<KBArticle> {
-    return this.http.get<KBArticle>(`${this.apiUrl}/kb/${id}`);
+  getArticle(id: string): Observable<KbArticle> {
+    return this.http.get<KbArticle>(`${this.apiUrl}/${id}`);
   }
 
-  createArticle(article: Partial<KBArticle>): Observable<KBArticle> {
-    return this.http.post<KBArticle>(`${this.apiUrl}/kb/`, article);
+  createArticle(data: Partial<KbArticle>): Observable<KbArticle> {
+    return this.http.post<KbArticle>(this.apiUrl, data);
   }
 
   deleteArticle(id: string): Observable<void> {
-    return this.http.delete<void>(`${this.apiUrl}/kb/${id}`);
+    return this.http.delete<void>(`${this.apiUrl}/${id}`);
   }
 }

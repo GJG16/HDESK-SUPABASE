@@ -1,13 +1,14 @@
 import { Injectable } from '@angular/core';
-import { Subject } from 'rxjs';
+import { Subject, Observable } from 'rxjs';
 import { AuthService } from './auth.service';
-import { environment } from '../../environments/environment';
 
 export interface AppNotification {
-  id: number;
+  id: string;
   type: string;
+  ticket_id: string;
   message: string;
-  ticket_id?: string;
+  read: boolean;
+  timestamp: Date;
 }
 
 @Injectable({
@@ -15,12 +16,14 @@ export interface AppNotification {
 })
 export class NotificationService {
   private socket: WebSocket | null = null;
-  private notificationSubject = new Subject<AppNotification>();
-  public notifications$ = this.notificationSubject.asObservable();
+  private notificationsSubject = new Subject<AppNotification>();
+  private reconnectInterval = 5000;
   
-  private counter = 0;
+  // Guardamos las notificaciones en memoria temporalmente
+  public notifications: AppNotification[] = [];
 
   constructor(private authService: AuthService) {
+    // Escuchar cambios en el login/logout
     this.authService.currentUser$.subscribe(user => {
       if (user) {
         this.connect();
@@ -30,46 +33,80 @@ export class NotificationService {
     });
   }
 
+  get notifications$(): Observable<AppNotification> {
+    return this.notificationsSubject.asObservable();
+  }
+
   private connect(): void {
-    if (this.socket) {
-      this.socket.close();
+    if (this.socket && this.socket.readyState === WebSocket.OPEN) {
+      return;
     }
-    
+
     const token = this.authService.getToken();
     if (!token) return;
 
-    const wsUrl = environment.apiUrl.replace('http://', 'ws://').replace('https://', 'wss://') + `/ws?token=${token}`;
+    // Conectar al WebSocket del backend
+    // Usamos el hostname actual pero cambiamos http a ws y el puerto al 8000
+    // Asumiendo que el frontend está en localhost:4200 y el backend en localhost:8000
+    const wsUrl = `ws://localhost:8000/api/ws?token=${token}`;
     
     this.socket = new WebSocket(wsUrl);
 
     this.socket.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data);
-        this.notificationSubject.next({
-          id: ++this.counter,
+        const notification: AppNotification = {
+          id: Math.random().toString(36).substring(2, 9),
           type: data.type,
+          ticket_id: data.ticket_id,
           message: data.message,
-          ticket_id: data.ticket_id
-        });
+          read: false,
+          timestamp: new Date()
+        };
+        
+        // Agregar al inicio de la lista local
+        this.notifications.unshift(notification);
+        
+        // Emitir el evento para el Toast visual
+        this.notificationsSubject.next(notification);
       } catch (e) {
-        console.error('Error parsing notification', e);
+        console.error('Error parsing WS message', e);
       }
     };
 
     this.socket.onclose = () => {
-      // Intentar reconectar después de 5 segundos si sigue logueado
-      setTimeout(() => {
-        if (this.authService.isAuthenticated()) {
-          this.connect();
-        }
-      }, 5000);
+      console.log('WebSocket cerrado. Intentando reconectar...');
+      setTimeout(() => this.connect(), this.reconnectInterval);
+    };
+
+    this.socket.onerror = (error) => {
+      console.error('Error en WebSocket:', error);
+      if (this.socket) {
+        this.socket.close();
+      }
     };
   }
 
-  private disconnect(): void {
+  public disconnect(): void {
     if (this.socket) {
       this.socket.close();
       this.socket = null;
     }
+    this.notifications = [];
+  }
+
+  public markAsRead(id: string): void {
+    const notif = this.notifications.find(n => n.id === id);
+    if (notif) {
+      notif.read = true;
+    }
+  }
+
+  public markAllAsRead(): void {
+    this.notifications.forEach(n => n.read = true);
+  }
+  
+  public getUnreadCount(): number {
+    return this.notifications.filter(n => !n.read).length;
   }
 }

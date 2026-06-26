@@ -5,6 +5,7 @@ export interface User {
   rol: 'admin' | 'agent' | 'user';
   fecha_creacion?: Date;
   activo?: boolean;
+  departamento?: string;
 }
 
 export interface UserUpdate {
@@ -12,6 +13,13 @@ export interface UserUpdate {
   email?: string;
   rol?: string;
   password?: string;
+}
+
+export interface PaginatedResponse<T> {
+  items: T[];
+  total: number;
+  page: number;
+  pages: number;
 }
 
 export interface TokenResponse {
