@@ -43,7 +43,7 @@ export class App implements OnInit {
     });
   }
 
-  dismiss(id: number) {
+  dismiss(id: string) {
     this.activeToasts = this.activeToasts.filter(t => t.id !== id);
   }
 }
