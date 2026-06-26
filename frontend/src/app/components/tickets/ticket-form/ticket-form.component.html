@@ -1,170 +1,239 @@
-<div [class.modal-backdrop]="modalTicketId" (click)="modalTicketId && closeModal()">
-  <div class="form-container" [class.modal-container]="modalTicketId" (click)="$event.stopPropagation()">
-    <div class="modal-header" *ngIf="modalTicketId">
-      <h2>Editar Ticket #{{ ticketId?.substring(0, 6) }}</h2>
-      <button class="close-btn" type="button" (click)="closeModal()">✕</button>
-    </div>
-    <div class="form-card" [class.no-shadow]="modalTicketId">
-      <h2 *ngIf="!modalTicketId">{{ isEditMode ? 'Editar' : 'Crear' }} Ticket</h2>
+<!-- Backdrop -->
+<div [class.fixed]="modalTicketId" [class.inset-0]="modalTicketId" [class.z-50]="modalTicketId" [class.flex]="modalTicketId" [class.items-center]="modalTicketId" [class.justify-center]="modalTicketId" [class.p-4]="modalTicketId" [class.sm:p-0]="modalTicketId">
+  <div *ngIf="modalTicketId" class="absolute inset-0 bg-slate-900/70 backdrop-blur-sm transition-opacity" (click)="closeModal()"></div>
 
-    <form [formGroup]="ticketForm" (ngSubmit)="onSubmit()" data-testid="ticket-form">
-      <div *ngIf="error" class="alert alert-danger">
-        {{ error }}
-      </div>
-
-      <div class="form-group">
-        <label for="titulo">Título *</label>
-        <input
-          type="text"
-          id="titulo"
-          formControlName="titulo"
-          placeholder="Ingresa el título del ticket"
-          [class.is-invalid]="f['titulo'].invalid && f['titulo'].touched"
-          data-testid="input-titulo"
-        />
-        <div *ngIf="f['titulo'].invalid && f['titulo'].touched" class="invalid-feedback">
-          <div *ngIf="f['titulo'].errors?.['required']">El título es requerido</div>
-          <div *ngIf="f['titulo'].errors?.['minlength']">Mínimo 5 caracteres</div>
-        </div>
-      </div>
-
-      <div class="form-group">
-        <label for="descripcion">Descripción *</label>
-        <quill-editor
-          formControlName="descripcion"
-          placeholder="Describe el problema en detalle"
-          [modules]="{ toolbar: [['bold', 'italic', 'underline'], [{'list': 'ordered'}, {'list': 'bullet'}], ['clean']] }"
-          [class.is-invalid]="f['descripcion'].invalid && f['descripcion'].touched"
-        ></quill-editor>
-        <div *ngIf="f['descripcion'].invalid && f['descripcion'].touched" class="invalid-feedback">
-          <div *ngIf="f['descripcion'].errors?.['required']">La descripción es requerida</div>
-          <div *ngIf="f['descripcion'].errors?.['minlength']">Mínimo 10 caracteres</div>
-        </div>
-      </div>
-
-      <div class="form-row">
-        <div class="form-group">
-          <label for="tipo">Tipo *</label>
-          <select
-            id="tipo"
-            formControlName="tipo"
-            [class.is-invalid]="f['tipo'].invalid && f['tipo'].touched"
-            data-testid="select-tipo"
-          >
-            <option value="incidente">Incidente</option>
-            <option value="requerimiento">Requerimiento</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label for="prioridad">Prioridad *</label>
-          <select
-            id="prioridad"
-            formControlName="prioridad"
-            [class.is-invalid]="f['prioridad'].invalid && f['prioridad'].touched"
-            data-testid="select-prioridad"
-          >
-            <option value="baja">Baja</option>
-            <option value="media">Media</option>
-            <option value="alta">Alta</option>
-            <option value="critica">Crítica</option>
-          </select>
-        </div>
-
-        <div class="form-group">
-          <label for="estado">Estado *</label>
-          <select
-            id="estado"
-            formControlName="estado"
-            [class.is-invalid]="f['estado'].invalid && f['estado'].touched"
-            data-testid="select-estado"
-          >
-            <option value="abierto">Abierto</option>
-            <option value="en_progreso">En Progreso</option>
-            <option value="resuelto">Resuelto</option>
-            <option value="cerrado">Cerrado</option>
-          </select>
-        </div>
-      </div>
-
-      <div class="form-group" *ngIf="isAdmin()">
-        <label for="usuario_id">Solicitante *</label>
-        <select id="usuario_id" formControlName="usuario_id">
-          <option value="">Selecciona un usuario</option>
-          <option *ngFor="let usuario of usuarios" [value]="usuario.id">{{ usuario.nombre }} ({{ usuario.rol }})</option>
-        </select>
-      </div>
-
-      <div class="form-actions">
-        <button type="submit" class="btn btn-primary" [disabled]="loading || ticketForm.disabled" data-testid="btn-submit-ticket">
-          {{ loading ? 'Guardando...' : 'Actualizar' }}
-        </button>
-        <button type="button" class="btn btn-secondary" (click)="cancel()" data-testid="btn-cancel-ticket">
-          Regresar
-        </button>
-      </div>
-    </form>
+  <!-- Form Container (Modal or Page) -->
+  <div class="relative w-full overflow-hidden flex flex-col bg-slate-50 dark:bg-slate-950 animate-slide-up"
+    [ngClass]="modalTicketId ? 'max-w-5xl max-h-[90vh] rounded-xl shadow-2xl' : 'h-full rounded-lg'">
     
-    <!-- Sección de Comentarios -->
-      <div class="timeline-section" data-testid="timeline-section" *ngIf="ticketId">
-        <h3>Línea de Tiempo</h3>
-        <div class="timeline-list">
-          <ng-container *ngFor="let item of timelineItems">
-            <!-- HISTORY ITEM -->
-            <div class="timeline-item history-item" *ngIf="item.type === 'history'">
-              <div class="timeline-icon">📝</div>
-              <div class="timeline-content">
-                <span class="history-text">
-                  El campo <strong>{{ item.data.campo }}</strong> cambió de 
-                  <code>{{ item.data.valor_anterior || 'nada' }}</code> a 
-                  <code>{{ item.data.valor_nuevo }}</code>
-                </span>
-                <span class="timeline-date">{{ item.date | date:'short' }}</span>
-              </div>
-            </div>
-
-            <!-- COMMENT ITEM -->
-            <div class="timeline-item comment-item" *ngIf="item.type === 'comment'" [ngClass]="{'comment-mine': item.data.usuario_id === currentUser?.id, 'comment-agent': item.data.rol_autor === 'agent' || item.data.rol_autor === 'admin'}">
-              <div class="comment-header">
-                <strong>{{ item.data.nombre_autor || 'Usuario' }}</strong>
-                <span class="comment-role">{{ item.data.rol_autor }}</span>
-                <span class="comment-date">{{ item.date | date:'short' }}</span>
-              </div>
-              <div class="comment-body" [innerHTML]="item.data.texto"></div>
-            </div>
-          </ng-container>
+    <!-- Header -->
+    <div *ngIf="modalTicketId" class="px-6 py-4 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex justify-between items-center shrink-0">
+      <div class="flex items-center space-x-3">
+        <div class="bg-indigo-100 dark:bg-indigo-900/50 p-2 rounded-lg text-indigo-600 dark:text-indigo-400">
+          <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+        </div>
+        <div>
+          <h2 class="text-lg font-bold text-slate-900 dark:text-white">Ticket #{{ ticketId?.substring(0, 8) }}</h2>
+          <p class="text-xs text-slate-500">Editor de detalles y línea de tiempo</p>
         </div>
       </div>
-      <div class="attachments-section" data-testid="attachments-section">
-        <h3>Archivos Adjuntos</h3>
-        <div class="attachment-list">
-          <div *ngIf="attachments.length === 0" class="no-attachments">No hay archivos adjuntos.</div>
-          <div class="attachment-item" *ngFor="let file of attachments">
-            <a [href]="apiUrl + file.url" target="_blank">{{ file.filename }}</a>
-            <span class="attachment-date">{{ file.uploaded_at | date:'short' }}</span>
+      <button type="button" (click)="closeModal()" class="text-slate-400 hover:text-slate-500 dark:hover:text-slate-300 transition-colors rounded-md p-1 hover:bg-slate-100 dark:hover:bg-slate-800">
+        <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+      </button>
+    </div>
+
+    <!-- Body Split: Form (Left) / Timeline (Right) -->
+    <div class="flex flex-col lg:flex-row flex-1 overflow-hidden">
+      
+      <!-- LEFT: Ticket Form -->
+      <div class="w-full lg:w-1/2 p-6 overflow-y-auto custom-scrollbar border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/50">
+        
+        <div *ngIf="error" class="mb-4 p-4 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 rounded-md text-sm border border-red-200 dark:border-red-900/50">
+          {{ error }}
+        </div>
+
+        <form [formGroup]="ticketForm" (ngSubmit)="onSubmit()" class="space-y-5">
+          
+          <!-- Título -->
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wide mb-1">Título</label>
+            <input id="titulo" type="text" formControlName="titulo" class="block w-full rounded-md border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm text-slate-900 dark:text-white px-3 py-2 border transition-colors" placeholder="Ej. El sistema no carga los reportes">
+            <div *ngIf="f['titulo'].errors?.['required'] && f['titulo'].touched" class="mt-1 text-sm text-red-600">El título es requerido</div>
+            <div *ngIf="f['titulo'].errors?.['minlength'] && f['titulo'].touched" class="mt-1 text-sm text-red-600">El título debe tener al menos 5 caracteres</div>
+          </div>
+
+          <!-- Deflexión de Tickets (Sugerencias KB) -->
+          <div *ngIf="suggestedArticles.length > 0 && !isEditMode" class="mt-4 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-900/50 rounded-lg shadow-sm">
+            <h4 class="text-sm font-semibold text-blue-800 dark:text-blue-300 flex items-center mb-2">
+              <svg class="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+              ¿Alguna de estas guías resuelve tu problema?
+            </h4>
+            <ul class="space-y-2">
+              <li *ngFor="let article of suggestedArticles">
+                <a [routerLink]="['/kb', article.id]" target="_blank" class="text-sm text-blue-600 dark:text-blue-400 hover:underline flex items-center">
+                  <svg class="w-3.5 h-3.5 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
+                  {{ article.titulo }}
+                </a>
+              </li>
+            </ul>
+          </div>
+
+          <div class="col-span-2">
+            <label for="descripcion" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Descripción del Problema</label>
+          </div>
+
+          <!-- Tipo, Prioridad, Estado (Grid) -->
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wide mb-1">Tipo</label>
+              <select formControlName="tipo" 
+                class="block w-full rounded-md border-slate-300 dark:border-slate-700 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white py-2 px-3 border transition-colors disabled:opacity-60 disabled:cursor-not-allowed">
+                <option value="incidente">Incidente</option>
+                <option value="requerimiento">Requerimiento</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wide mb-1">Prioridad</label>
+              <select formControlName="prioridad" 
+                class="block w-full rounded-md border-slate-300 dark:border-slate-700 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white py-2 px-3 border transition-colors disabled:opacity-60 disabled:cursor-not-allowed">
+                <option value="baja">Baja</option>
+                <option value="media">Media</option>
+                <option value="alta">Alta</option>
+                <option value="critica">Crítica</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wide mb-1">Estado</label>
+              <select formControlName="estado" 
+                class="block w-full rounded-md border-slate-300 dark:border-slate-700 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white py-2 px-3 border transition-colors disabled:opacity-60 disabled:cursor-not-allowed">
+                <option value="abierto">Abierto</option>
+                <option value="en_progreso">En Progreso</option>
+                <option value="resuelto">Resuelto</option>
+                <option value="cerrado">Cerrado</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Solicitante (Admin only) -->
+          <div *ngIf="isAdmin()">
+            <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wide mb-1">Solicitante (Admin)</label>
+            <select formControlName="usuario_id" 
+              class="block w-full rounded-md border-slate-300 dark:border-slate-700 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white py-2 px-3 border transition-colors">
+              <option value="">Selecciona un usuario</option>
+              <option *ngFor="let usuario of usuarios" [value]="usuario.id">{{ usuario.nombre }} ({{ usuario.rol }})</option>
+            </select>
+          </div>
+
+          <!-- Descripción -->
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wide mb-1">Descripción</label>
+            <div class="rounded-md border border-slate-300 dark:border-slate-700 shadow-sm overflow-hidden bg-white dark:bg-slate-900 disabled:opacity-60">
+              <quill-editor formControlName="descripcion" 
+                [modules]="{ toolbar: [['bold', 'italic', 'underline'], [{'list': 'ordered'}, {'list': 'bullet'}], ['clean']] }" 
+                class="border-none">
+              </quill-editor>
+            </div>
+          </div>
+
+          <!-- Acciones Guardar -->
+          <div class="pt-4 border-t border-slate-200 dark:border-slate-800 flex justify-end space-x-3">
+            <app-button variant="secondary" type="button" (click)="cancel()">Cancelar</app-button>
+            <app-button variant="primary" type="submit" [isLoading]="loading" [disabled]="ticketForm.disabled">Guardar Cambios</app-button>
+          </div>
+        </form>
+      </div>
+
+      <!-- RIGHT: Timeline & Comments -->
+      <div class="w-full lg:w-1/2 flex flex-col bg-slate-50/50 dark:bg-slate-950/50 relative">
+        
+        <!-- Timeline Scroll Area -->
+        <div class="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar pb-32">
+          <h3 class="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wide border-b border-slate-200 dark:border-slate-800 pb-2 mb-4">Línea de Tiempo</h3>
+          
+          <div *ngIf="timelineItems.length === 0" class="text-sm text-slate-500 text-center py-8">
+            No hay actividad reciente.
+          </div>
+
+          <div class="space-y-4">
+            <ng-container *ngFor="let item of timelineItems">
+              
+              <!-- History Event -->
+              <div *ngIf="item.type === 'history'" class="flex space-x-3">
+                <div class="flex-shrink-0 mt-1">
+                  <span class="h-6 w-6 rounded-full bg-slate-200 dark:bg-slate-800 flex items-center justify-center text-xs text-slate-500">
+                    <svg class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
+                  </span>
+                </div>
+                <div class="flex-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg p-3 shadow-sm text-sm">
+                  <p class="text-slate-600 dark:text-slate-400">
+                    El campo <strong class="text-slate-900 dark:text-white">{{ item.data.campo }}</strong> cambió de 
+                    <span class="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 font-mono text-xs line-through text-slate-500">{{ item.data.valor_anterior || 'nada' }}</span> a 
+                    <span class="px-1.5 py-0.5 rounded bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 font-mono text-xs">{{ item.data.valor_nuevo }}</span>
+                  </p>
+                  <span class="text-xs text-slate-400 mt-1 block">{{ item.date | date:'short' }}</span>
+                </div>
+              </div>
+
+              <!-- Comment Event -->
+              <div *ngIf="item.type === 'comment'" class="flex space-x-3" [ngClass]="{'flex-row-reverse space-x-reverse': item.data.usuario_id === currentUser?.id}">
+                <div class="flex-shrink-0 mt-1">
+                  <div class="h-8 w-8 rounded-full flex items-center justify-center text-xs font-bold text-white shadow-sm"
+                    [ngClass]="item.data.rol_autor === 'agent' || item.data.rol_autor === 'admin' ? 'bg-indigo-500' : 'bg-slate-400 dark:bg-slate-600'">
+                    {{ item.data.nombre_autor ? item.data.nombre_autor.substring(0, 2).toUpperCase() : 'US' }}
+                  </div>
+                </div>
+                <div class="flex-1 max-w-[85%] rounded-lg p-3 shadow-sm text-sm"
+                  [ngClass]="item.data.usuario_id === currentUser?.id ? 'bg-blue-600 text-white' : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300'">
+                  <div class="flex justify-between items-center mb-1">
+                    <strong [ngClass]="item.data.usuario_id === currentUser?.id ? 'text-blue-100' : 'text-slate-900 dark:text-white'">{{ item.data.nombre_autor || 'Usuario' }}</strong>
+                    <span class="text-[10px] opacity-75">{{ item.date | date:'shortTime' }}</span>
+                  </div>
+                  <div class="prose prose-sm prose-p:my-1 prose-ul:my-1 max-w-none" [ngClass]="{'prose-invert': item.data.usuario_id === currentUser?.id || false}" [innerHTML]="item.data.texto"></div>
+                </div>
+              </div>
+
+            </ng-container>
           </div>
         </div>
 
-        <div class="drop-zone" 
-             (dragover)="onDragOver($event)" 
-             (dragleave)="onDragLeave($event)" 
-             (drop)="onDrop($event)"
-             [class.dragover]="isDragover">
-          <p>Arrastra y suelta archivos aquí para adjuntarlos, o haz clic para seleccionar.</p>
-          <input type="file" (change)="onFileSelected($event)" style="display: none;" #fileInput>
-          <button type="button" class="btn btn-secondary btn-small" (click)="fileInput.click()">Seleccionar archivo</button>
+        <!-- Sticky Comment Input Area -->
+        <div class="absolute bottom-0 left-0 right-0 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 p-4 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
+          <!-- Attachments Zone -->
+          <div class="mb-3">
+            <div *ngIf="attachments.length > 0" class="flex flex-wrap gap-2 mb-2">
+              <a *ngFor="let file of attachments" [href]="apiUrl + file.url" target="_blank" class="inline-flex items-center px-2.5 py-1.5 rounded text-xs font-medium bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
+                <svg class="h-3.5 w-3.5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" /></svg>
+                {{ file.filename }}
+              </a>
+            </div>
+            <div class="border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-lg p-2 text-center transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/50 cursor-pointer"
+              [class.bg-blue-50]="isDragover" [class.border-blue-400]="isDragover"
+              (dragover)="onDragOver($event)" (dragleave)="onDragLeave($event)" (drop)="onDrop($event)" (click)="fileInput.click()">
+              <p class="text-xs text-slate-500">Arrastra archivos aquí o haz clic</p>
+              <input type="file" (change)="onFileSelected($event)" class="hidden" #fileInput>
+            </div>
+          </div>
+
+            <!-- Compose Comment -->
+            <div class="mt-8 border-t border-slate-100 dark:border-slate-800 pt-6">
+              
+              <!-- Macros Toolbar for Agents -->
+              <div *ngIf="isAdmin() || authService.isAgent()" class="mb-4 flex items-center justify-between">
+                <label class="text-sm font-medium text-slate-700 dark:text-slate-300">Añadir una respuesta</label>
+                <div class="flex items-center">
+                  <svg class="w-4 h-4 text-slate-400 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+                  <select (change)="applyMacro($event)" class="text-xs border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 rounded shadow-sm focus:ring-blue-500 focus:border-blue-500 py-1 pl-2 pr-6">
+                    <option value="">Aplicar Respuesta Rápida...</option>
+                    <option *ngFor="let m of macros" [value]="m.id">{{ m.nombre }}</option>
+                  </select>
+                </div>
+              </div>
+              <div *ngIf="!isAdmin() && !authService.isAgent()" class="mb-4">
+                <label class="text-sm font-medium text-slate-700 dark:text-slate-300">Añadir una respuesta</label>
+              </div>
+
+              <div class="bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg shadow-sm overflow-hidden focus-within:border-blue-500 focus-within:ring-1 focus-within:ring-blue-500 transition-shadow">
+                <textarea 
+                  [(ngModel)]="newCommentTexto" 
+                  rows="3" 
+                  class="block w-full border-0 py-3 px-4 focus:ring-0 sm:text-sm bg-transparent text-slate-900 dark:text-white placeholder-slate-400"
+                  placeholder="Escribe tu mensaje aquí..."
+                  [disabled]="submittingComment"></textarea>
+              </div>
+              
+              <div class="mt-4 flex justify-end">
+                <button (click)="submitComment()" [disabled]="submittingComment || !newCommentTexto.trim()" 
+                  class="h-10 px-4 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-sm font-medium transition-colors disabled:opacity-50 flex items-center justify-center shrink-0 shadow-sm">
+                  <svg *ngIf="!submittingComment" class="h-4 w-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" /></svg>
+                  {{ submittingComment ? '...' : 'Enviar' }}
+                </button>
+              </div>
+            </div>
+
         </div>
+
       </div>
-      
-      <div class="comment-input-area">
-        <quill-editor
-          [(ngModel)]="newCommentTexto"
-          placeholder="Escribe un comentario o nota..."
-          [modules]="{ toolbar: [['bold', 'italic', 'underline'], [{'list': 'ordered'}, {'list': 'bullet'}], ['clean']] }"
-        ></quill-editor>
-        <button (click)="submitComment()" class="btn btn-primary btn-comment" [disabled]="submittingComment || !newCommentTexto?.trim()" data-testid="btn-submit-comment">
-          {{ submittingComment ? 'Enviando...' : 'Enviar mensaje' }}
-        </button>
-      </div>
+
     </div>
   </div>
 </div>

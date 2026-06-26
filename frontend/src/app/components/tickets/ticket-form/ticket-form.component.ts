@@ -7,14 +7,17 @@ import { takeUntil } from 'rxjs/operators';
 import { TicketService } from '../../../services/ticket.service';
 import { AuthService } from '../../../services/auth.service';
 import { UsuariosService } from '../../../services/usuarios.service';
+import { KbService, KbArticle } from '../../../services/kb.service';
+import { MacroService, Macro } from '../../../services/macro.service';
 import { Ticket, User, TicketComment } from '../../../models';
 
 import { QuillModule } from 'ngx-quill';
+import { ButtonComponent } from '../../ui/button/button';
 
 @Component({
   selector: 'app-ticket-form',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, FormsModule, RouterModule, QuillModule],
+  imports: [CommonModule, ReactiveFormsModule, FormsModule, RouterModule, QuillModule, ButtonComponent],
   templateUrl: './ticket-form.component.html',
   styleUrls: ['./ticket-form.component.css']
 })
@@ -40,6 +43,13 @@ export class TicketFormComponent implements OnInit, OnDestroy, OnChanges {
   isDragover = false;
   apiUrl = 'http://localhost:8000'; // Or use environment.apiUrl
 
+  // Deflexión de Tickets
+  suggestedArticles: KbArticle[] = [];
+  allKbArticles: KbArticle[] = [];
+  
+  // Macros
+  macros: Macro[] = [];
+
   private destroy$ = new Subject<void>();
 
   constructor(
@@ -47,9 +57,11 @@ export class TicketFormComponent implements OnInit, OnDestroy, OnChanges {
     private ticketService: TicketService,
     private route: ActivatedRoute,
     private router: Router,
-    private authService: AuthService,
+    public authService: AuthService,
     private cdr: ChangeDetectorRef,
-    private usuariosService: UsuariosService
+    private usuariosService: UsuariosService,
+    private kbService: KbService,
+    private macroService: MacroService
   ) {
     this.currentUser = this.authService.getCurrentUser();
     this.ticketForm = this.formBuilder.group({
@@ -63,6 +75,10 @@ export class TicketFormComponent implements OnInit, OnDestroy, OnChanges {
 
   ngOnInit(): void {
     this.loadUsuarios();
+    this.loadKbArticles();
+    if (this.isAdmin() || this.authService.isAgent()) {
+      this.loadMacros();
+    }
     
     if (this.modalTicketId) {
       this.setupEditMode(this.modalTicketId);
@@ -74,6 +90,56 @@ export class TicketFormComponent implements OnInit, OnDestroy, OnChanges {
         }
       });
     }
+
+    // Suscribirse a cambios en el título para la Deflexión
+    this.ticketForm.get('titulo')?.valueChanges.pipe(
+      takeUntil(this.destroy$)
+    ).subscribe(value => {
+      this.suggestArticles(value);
+    });
+  }
+
+  loadKbArticles(): void {
+    this.kbService.getArticles().subscribe({
+      next: (articles) => {
+        this.allKbArticles = articles;
+      }
+    });
+  }
+
+  suggestArticles(query: string): void {
+    if (!query || query.length < 4 || this.isEditMode) {
+      this.suggestedArticles = [];
+      return;
+    }
+    const q = query.toLowerCase();
+    this.suggestedArticles = this.allKbArticles
+      .filter(a => a.titulo.toLowerCase().includes(q) || a.contenido.toLowerCase().includes(q))
+      .slice(0, 3); // Mostrar máximo 3
+  }
+  
+  loadMacros(): void {
+    this.macroService.getMacros().subscribe({
+      next: (macros) => {
+        this.macros = macros;
+      }
+    });
+  }
+
+  applyMacro(event: Event): void {
+    const select = event.target as HTMLSelectElement;
+    const macroId = select.value;
+    if (!macroId) return;
+
+    const macro = this.macros.find(m => m.id === macroId);
+    if (macro) {
+      this.newCommentTexto = macro.contenido;
+      if (macro.cambio_estado) {
+        this.ticketForm.patchValue({ estado: macro.cambio_estado });
+      }
+    }
+    // Reset select
+    select.value = '';
   }
 
   ngOnChanges(changes: SimpleChanges): void {
