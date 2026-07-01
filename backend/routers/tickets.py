@@ -3,6 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
 from sqlalchemy.orm import Session
 # pyrefly: ignore [missing-import]
 from sqlalchemy import String
+from pydantic import BaseModel
 from typing import List, Optional
 from datetime import datetime, timezone
 import hashlib
@@ -11,9 +12,10 @@ import time
 import models
 from database import get_db
 from services.ticket_service import (
-    enriquecer_ticket, motor_de_triaje, monitor_sla_escalation, 
+    enriquecer_ticket, motor_de_triaje, 
     registrar_auditoria, registrar_historial_ticket
 )
+from routers.ws import manager
 
 router = APIRouter(
     prefix="/tickets",
@@ -130,16 +132,13 @@ def crear_ticket_con_triaje(ticket_in: models.TicketCreate, background_tasks: Ba
             None, "Pendiente", "Ticket creado por triaje automático"
         )
 
-        # Disparar Engine de SLAs en Background
-        background_tasks.add_task(monitor_sla_escalation, nuevo_ticket.id)
-
         return enriquecer_ticket(nuevo_ticket, db)
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=500, detail=f"Error al crear ticket: {str(e)}")
 
 @router.patch("/{ticket_id}", response_model=models.TicketResponse)
-def actualizar_ticket(ticket_id: int, patch: models.TicketPatch, db: Session = Depends(get_db)):
+def actualizar_ticket(ticket_id: int, patch: models.TicketPatch, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
     """Actualiza parcialmente un ticket (estado, resolución, asignación)."""
     ticket = db.query(models.Ticket).filter(models.Ticket.id == ticket_id).first()
     if not ticket:
@@ -183,7 +182,9 @@ def actualizar_ticket(ticket_id: int, patch: models.TicketPatch, db: Session = D
                 patch.comentario_resolucion
             )
 
-        return enriquecer_ticket(ticket, db)
+        enriquecido = enriquecer_ticket(ticket, db)
+        background_tasks.add_task(manager.send_message_to_ticket, ticket_id, {"event": "ticket_updated", "payload": enriquecido})
+        return enriquecido
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=500, detail=f"Error al actualizar ticket: {str(e)}")
@@ -262,8 +263,44 @@ def listar_comentarios(ticket_id: int, db: Session = Depends(get_db)):
 def listar_adjuntos(ticket_id: int, db: Session = Depends(get_db)):
     return db.query(models.Adjunto).filter(models.Adjunto.id_ticket == ticket_id).all()
 
+class ComentarioArticuloCreate(BaseModel):
+    id_articulo: int
+    id_usuario: int
+
+@router.post("/{ticket_id}/comentarios/articulo", response_model=models.ComentarioResponse)
+def compartir_articulo(ticket_id: int, data: ComentarioArticuloCreate, db: Session = Depends(get_db)):
+    """Agrega un comentario compartiendo un artículo de la base de conocimientos."""
+    ticket = db.query(models.Ticket).filter(models.Ticket.id == ticket_id).first()
+    articulo = db.query(models.ArticuloKB).filter(models.ArticuloKB.id == data.id_articulo).first()
+    
+    if not ticket or not articulo:
+        raise HTTPException(status_code=404, detail="Ticket o Artículo no encontrado")
+        
+    contenido = f"Te sugiero revisar este artículo de nuestra Base de Conocimientos para resolver el incidente actual:\n\n**{articulo.titulo}**\n\n{articulo.contenido}"
+    
+    comentario = models.ComentarioTicket(
+        id_ticket=ticket_id,
+        id_usuario=data.id_usuario,
+        contenido=contenido,
+        es_nota_interna=False
+    )
+    db.add(comentario)
+    ticket.fecha_actualizacion = datetime.now(timezone.utc)
+    db.commit()
+    db.refresh(comentario)
+    
+    return {
+        "id": comentario.id,
+        "id_ticket": comentario.id_ticket,
+        "id_usuario": comentario.id_usuario,
+        "nombre_usuario": comentario.usuario.nombre if comentario.usuario else None,
+        "contenido": comentario.contenido,
+        "es_nota_interna": comentario.es_nota_interna,
+        "fecha": comentario.fecha,
+    }
+
 @router.post("/{ticket_id}/comentarios", response_model=models.ComentarioResponse)
-def crear_comentario(ticket_id: int, data: models.ComentarioCreate, db: Session = Depends(get_db)):
+def crear_comentario(ticket_id: int, data: models.ComentarioCreate, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
     """Agrega un comentario a un ticket."""
     ticket = db.query(models.Ticket).filter(models.Ticket.id == ticket_id).first()
     if not ticket:
@@ -287,7 +324,7 @@ def crear_comentario(ticket_id: int, data: models.ComentarioCreate, db: Session 
             f"{'Nota interna' if data.es_nota_interna else 'Comentario público'}"
         )
 
-        return {
+        response_data = {
             "id": comentario.id,
             "id_ticket": comentario.id_ticket,
             "id_usuario": comentario.id_usuario,
@@ -296,6 +333,8 @@ def crear_comentario(ticket_id: int, data: models.ComentarioCreate, db: Session 
             "es_nota_interna": comentario.es_nota_interna,
             "fecha": comentario.fecha,
         }
+        background_tasks.add_task(manager.send_message_to_ticket, ticket_id, {"event": "new_comment", "payload": response_data})
+        return response_data
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=500, detail=f"Error al crear comentario: {str(e)}")

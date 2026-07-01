@@ -20,6 +20,50 @@ def listar_areas(db: Session = Depends(get_db)):
 def listar_departamentos(db: Session = Depends(get_db)):
     return db.query(models.DepartamentoNegocio).filter(models.DepartamentoNegocio.activo == True).all()
 
+# ─── Palabras Clave Triaje ────────────────────────
+@router.get("/palabras-clave/", response_model=List[models.PalabraClaveResponse])
+def listar_palabras_clave(db: Session = Depends(get_db)):
+    palabras = db.query(models.PalabraClaveTriaje).all()
+    result = []
+    for p in palabras:
+        result.append({
+            "id": p.id,
+            "palabra": p.palabra,
+            "id_area_tecnica": p.id_area_tecnica,
+            "nombre_area": p.area_tecnica.nombre_area if p.area_tecnica else None
+        })
+    return result
+
+@router.post("/palabras-clave/", response_model=models.PalabraClaveResponse)
+def crear_palabra_clave(data: models.PalabraClaveCreate, db: Session = Depends(get_db), admin: models.Usuario = Depends(get_current_admin)):
+    existente = db.query(models.PalabraClaveTriaje).filter(models.PalabraClaveTriaje.palabra == data.palabra.lower()).first()
+    if existente:
+        raise HTTPException(400, "Esta palabra clave ya existe")
+    
+    palabra = models.PalabraClaveTriaje(
+        palabra=data.palabra.lower(),
+        id_area_tecnica=data.id_area_tecnica
+    )
+    db.add(palabra)
+    db.commit()
+    db.refresh(palabra)
+    
+    return {
+        "id": palabra.id,
+        "palabra": palabra.palabra,
+        "id_area_tecnica": palabra.id_area_tecnica,
+        "nombre_area": palabra.area_tecnica.nombre_area if palabra.area_tecnica else None
+    }
+
+@router.delete("/palabras-clave/{id_palabra}")
+def eliminar_palabra_clave(id_palabra: int, db: Session = Depends(get_db), admin: models.Usuario = Depends(get_current_admin)):
+    palabra = db.query(models.PalabraClaveTriaje).filter(models.PalabraClaveTriaje.id == id_palabra).first()
+    if not palabra:
+        raise HTTPException(404, "Palabra clave no encontrada")
+    db.delete(palabra)
+    db.commit()
+    return {"mensaje": "Palabra clave eliminada correctamente"}
+
 # ─── Auditoría ────────────────────────
 @router.get("/auditoria/", response_model=List[models.AuditoriaResponse])
 def listar_auditoria(limit: int = 50, db: Session = Depends(get_db)):
@@ -96,8 +140,13 @@ def obtener_csat(id_ticket: int, db: Session = Depends(get_db)):
     return csat
 
 # ─── Adjuntos (Uploads) ─────────────────────
+from core.supabase_client import supabase as supabase_client
+
 UPLOAD_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "uploads")
 os.makedirs(UPLOAD_DIR, exist_ok=True)
+
+SUPABASE_BUCKET = "adjuntos"
+SUPABASE_URL = os.environ.get("SUPABASE_URL", "")
 
 MAX_UPLOAD_SIZE = 10 * 1024 * 1024  # 10 MB
 ALLOWED_MIME_TYPES = {
@@ -126,24 +175,45 @@ def subir_adjunto(
     if file.content_type and file.content_type not in ALLOWED_MIME_TYPES:
         raise HTTPException(400, f"Tipo de archivo no permitido: {file.content_type}")
 
-    # Validar tamaño (leer y verificar)
+    # Leer contenido y validar tamaño
     contents = file.file.read()
     if len(contents) > MAX_UPLOAD_SIZE:
         raise HTTPException(400, f"El archivo excede el tamaño máximo de {MAX_UPLOAD_SIZE // (1024*1024)} MB")
-    file.file.seek(0)
 
-    file_location = os.path.join(UPLOAD_DIR, f"{int(time.time())}_{file.filename}")
-    with open(file_location, "wb+") as file_object:
-        file_object.write(contents)
+    filename_saved = f"{int(time.time())}_{file.filename}"
+    size = len(contents)
 
-    size = os.path.getsize(file_location)
+    # ── Intentar subir a Supabase Storage ──
+    if supabase_client and SUPABASE_URL:
+        try:
+            storage_path = f"ticket_{id_ticket}/{filename_saved}"
+            supabase_client.storage.from_(SUPABASE_BUCKET).upload(
+                path=storage_path,
+                file=contents,
+                file_options={"content-type": file.content_type or "application/octet-stream"}
+            )
+            # URL pública del archivo en Supabase
+            ruta_archivo = f"{SUPABASE_URL}/storage/v1/object/public/{SUPABASE_BUCKET}/{storage_path}"
+        except Exception as e:
+            print(f"Error subiendo a Supabase Storage, usando fallback local: {e}")
+            # Fallback: guardar localmente
+            file_location = os.path.join(UPLOAD_DIR, filename_saved)
+            with open(file_location, "wb+") as file_object:
+                file_object.write(contents)
+            ruta_archivo = f"/uploads/{filename_saved}"
+    else:
+        # Sin Supabase configurado: guardar localmente
+        file_location = os.path.join(UPLOAD_DIR, filename_saved)
+        with open(file_location, "wb+") as file_object:
+            file_object.write(contents)
+        ruta_archivo = f"/uploads/{filename_saved}"
 
     adjunto = models.Adjunto(
         id_ticket=id_ticket,
         id_comentario=id_comentario,
         id_usuario=id_usuario,
         nombre_archivo=file.filename,
-        ruta_archivo=file_location,
+        ruta_archivo=ruta_archivo,
         tipo_mime=file.content_type,
         tamano_bytes=size
     )

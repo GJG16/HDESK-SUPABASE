@@ -61,34 +61,40 @@ def registrar_historial_ticket(db: Session, id_ticket: int, id_usuario: Optional
 def motor_de_triaje(descripcion: str, db: Session) -> tuple[int, Optional[int]]:
     """
     Evalúa reglas condicionales deductivas para determinar el área y el especialista.
+    Utiliza palabras clave dinámicas de la base de datos.
     """
     desc = html.escape(descripcion.lower())
 
-    scores = {1: 0, 2: 0, 3: 0, 5: 0}
+    # Inicializar puntajes para todas las áreas técnicas activas
+    areas = db.query(models.AreaTecnica).filter(models.AreaTecnica.activa == True).all()
+    scores = {area.id: 0 for area in areas}
+    
+    # Obtener todas las palabras clave
+    palabras_bd = db.query(models.PalabraClaveTriaje).all()
+    
+    # Calcular puntajes
+    for p in palabras_bd:
+        if p.palabra.lower() in desc and p.id_area_tecnica in scores:
+            scores[p.id_area_tecnica] += 1
 
-    palabras_redes = ["router", "ip", "internet", "wifi", "vpn", "red"]
-    palabras_hw = ["pantalla", "teclado", "mouse", "impresora", "hardware", "pc"]
-    palabras_sw = ["windows", "office", "error de sistema", "software", "aplicación"]
-    palabras_seguridad = ["seguridad", "parche", "firewall", "certificado"]
+    # Obtener el área con mayor puntaje (si no hay puntaje, por defecto el ID menor o soporte general)
+    if not scores or max(scores.values()) == 0:
+        # Fallback: Soporte General o la primera área
+        fallback_area = db.query(models.AreaTecnica).filter(models.AreaTecnica.nombre_area.ilike("%Soporte%")).first()
+        if fallback_area:
+            id_area_asignada = fallback_area.id
+        else:
+            id_area_asignada = min(scores.keys()) if scores else 4
+    else:
+        id_area_asignada = max(scores, key=lambda x: scores[x])
 
-    for word in palabras_redes:
-        if word in desc: scores[1] += 1
-    for word in palabras_hw:
-        if word in desc: scores[2] += 1
-    for word in palabras_sw:
-        if word in desc: scores[3] += 1
-    for word in palabras_seguridad:
-        if word in desc: scores[5] += 1
-
-    id_area_asignada = max(scores, key=lambda x: scores[x])
-    if scores[id_area_asignada] == 0:
-        id_area_asignada = 4  # Soporte General
-
+    # Encontrar al especialista con menos carga de trabajo DENTRO de esa área
     especialista = (
         db.query(models.Usuario)
         .filter(
             models.Usuario.rol == "Tecnico",
             models.Usuario.activo == True,
+            models.Usuario.id_area_tecnica == id_area_asignada
         )
         .outerjoin(
             models.Ticket,
@@ -104,35 +110,42 @@ def motor_de_triaje(descripcion: str, db: Session) -> tuple[int, Optional[int]]:
 
     return id_area_asignada, id_especialista
 
-async def monitor_sla_escalation(ticket_id: int):
+def revisar_escalamientos_sla():
     """
-    Simula un Engine de SLAs en Background.
-    Espera 8 horas y escala el ticket a Crítica si sigue sin atención.
+    Busca todos los tickets 'Pendientes' creados hace más de 8 horas
+    que aún no sean 'Critica' y los escala masivamente.
+    Se ejecuta periódicamente vía cron.
     """
-    try:
-        await asyncio.sleep(8 * 3600)
-    except asyncio.CancelledError:
-        return
-
     db = database.SessionLocal()
     try:
-        ticket = db.query(models.Ticket).filter(models.Ticket.id == ticket_id).first()
-        if ticket and ticket.estado == "Pendiente":
-            criticidad_anterior = ticket.criticidad
+        from datetime import timedelta
+        # Límite de 8 horas atrás
+        limite_sla = datetime.now(timezone.utc) - timedelta(hours=8)
+        
+        tickets_a_escalar = db.query(models.Ticket).filter(
+            models.Ticket.estado == "Pendiente",
+            models.Ticket.criticidad != "Critica",
+            models.Ticket.fecha_creacion <= limite_sla
+        ).all()
 
+        for ticket in tickets_a_escalar:
+            criticidad_anterior = ticket.criticidad
             ticket.criticidad = "Critica"
             ticket.fecha_actualizacion = datetime.now(timezone.utc)
-            db.commit()
 
-            registrar_auditoria(db, None, "SLA_ESCALADO", f"Ticket #{ticket_id}",
+            registrar_auditoria(db, None, "SLA_ESCALADO", f"Ticket #{ticket.id}",
                                f"Criticidad escalada de {criticidad_anterior} a Critica por SLA")
 
             registrar_historial_ticket(
-                db, ticket_id, None,
+                db, ticket.id, None,
                 ticket.estado, ticket.estado,
                 "Escalado automático por vencimiento de SLA (8 horas sin atención)"
             )
-    except Exception:
+        
+        if tickets_a_escalar:
+            db.commit()
+    except Exception as e:
         db.rollback()
+        print(f"Error en revisar_escalamientos_sla: {e}")
     finally:
         db.close()

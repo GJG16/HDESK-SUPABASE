@@ -5,6 +5,8 @@ import { Chart, registerables } from 'chart.js';
 import { DashboardService } from '../../../services/dashboard.service';
 import { ToastService } from '../../../core/services/toast.service';
 import { DashboardMetrics, RendimientoResponse, ForecastingPicosItem } from '../../../models/helpdesk.models';
+import { jsPDF } from 'jspdf';
+import html2canvas from 'html2canvas';
 
 Chart.register(...registerables);
 
@@ -28,10 +30,10 @@ Chart.register(...registerables);
       <p class="text-sm text-slate-400">Análisis de rendimiento del equipo de soporte</p>
     </div>
     <div class="flex items-center gap-2">
-      <button (click)="exportarCSV()"
-        class="flex items-center gap-1.5 px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-bold rounded-xl transition-colors shadow-sm shadow-emerald-500/20">
+      <button (click)="exportarPDF()"
+        class="flex items-center gap-1.5 px-4 py-2 bg-rose-500 hover:bg-rose-600 text-white text-sm font-bold rounded-xl transition-colors shadow-sm shadow-rose-500/20">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-        Exportar CSV
+        Exportar PDF
       </button>
     </div>
   </div>
@@ -286,23 +288,31 @@ export class AdminReportesComponent implements OnInit, AfterViewInit, OnDestroy 
 
   ngOnDestroy() { this.charts.forEach(c => c.destroy()); }
 
-  exportarCSV() {
-    const data = this.dashData();
-    if (!data) return;
+  exportarPDF() {
+    const dashboardElement = document.querySelector('.space-y-6') as HTMLElement;
+    if (!dashboardElement) return;
+    
+    this.toast.info('Generando PDF...', 'Esto puede tardar unos segundos');
 
-    const rows = [
-      ['Métrica', 'Valor'],
-      ['Total Tickets', data.total_tickets.toString()],
-      ...Object.entries(data.por_estado || {}).map(([k, v]) => [`Estado: ${k}`, v.toString()]),
-      ...Object.entries(data.por_criticidad || {}).map(([k, v]) => [`Criticidad: ${k}`, v.toString()]),
-      ...Object.entries(data.por_area || {}).map(([k, v]) => [`Área ID: ${k}`, v.toString()]),
-    ];
-    const csv = rows.map(r => r.join(',')).join('\n');
-    const blob = new Blob([csv], { type: 'text/csv' });
-    const url  = URL.createObjectURL(blob);
-    const a    = document.createElement('a');
-    a.href = url; a.download = 'reporte-helpdesk.csv'; a.click();
-    URL.revokeObjectURL(url);
-    this.toast.success('CSV exportado', 'El archivo se descargó correctamente');
+    html2canvas(dashboardElement, {
+      scale: 2, // Mejor resolución
+      useCORS: true, 
+      backgroundColor: '#f8fafc' // Color de fondo slate-50
+    }).then(canvas => {
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const margin = 10;
+      const effectiveWidth = pdfWidth - (margin * 2);
+      const pdfHeight = (canvas.height * effectiveWidth) / canvas.width;
+      
+      pdf.addImage(imgData, 'PNG', margin, margin, effectiveWidth, pdfHeight);
+      pdf.save('Reporte_Dashboard_Helpdesk.pdf');
+      this.toast.success('PDF Exportado', 'El diseño gráfico se descargó correctamente');
+    }).catch(err => {
+      console.error('Error exportando PDF:', err);
+      this.toast.error('Error', 'No se pudo generar el documento');
+    });
   }
 }

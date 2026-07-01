@@ -8,7 +8,6 @@ def enriquecer_usuario(usuario: models.Usuario) -> dict:
         "email": usuario.email,
         "rol": usuario.rol,
         "especialidad": usuario.especialidad,
-        "extension": usuario.extension,
         "id_departamento": usuario.id_departamento,
         "id_area_tecnica": usuario.id_area_tecnica,
         "nombre_departamento": usuario.departamento.nombre if usuario.departamento else None,

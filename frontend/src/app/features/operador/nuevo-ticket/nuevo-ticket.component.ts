@@ -131,11 +131,20 @@ import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
       </h3>
       <p class="text-emerald-600 text-xs mb-4">Revisamos tu consulta y encontramos estos artículos en nuestra base de conocimientos que podrían resolver tu problema inmediatamente.</p>
 
-      <div *ngIf="sugerenciasKB().length === 0" class="text-sm text-emerald-600/70 italic text-center py-4">
+      <div *ngIf="buscando()" class="text-sm text-emerald-600/70 italic text-center py-4 flex items-center justify-center gap-2">
+        <svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+        Buscando guías...
+      </div>
+
+      <div *ngIf="!buscando() && sugerenciasKB().length === 0 && !busquedaRealizada()" class="text-sm text-emerald-600/70 italic text-center py-4">
         Escribe en el título o descripción para ver sugerencias...
       </div>
 
-      <div class="space-y-3">
+      <div *ngIf="!buscando() && sugerenciasKB().length === 0 && busquedaRealizada()" class="text-sm text-emerald-600/70 italic text-center py-4">
+        No se encontraron artículos relacionados con tu problema.
+      </div>
+
+      <div *ngIf="!buscando()" class="space-y-3">
         <div *ngFor="let s of sugerenciasKB()" class="bg-white rounded-xl p-3 shadow-sm border border-emerald-100 hover:border-emerald-300 transition-colors cursor-pointer group" (click)="abrirArticulo(s)">
           <h4 class="text-sm font-bold text-slate-800 group-hover:text-emerald-600 transition-colors">{{ s.titulo }}</h4>
           <p class="text-xs text-slate-500 line-clamp-2 mt-1">{{ s.contenido }}</p>
@@ -175,6 +184,8 @@ export class NuevoTicketComponent implements OnInit {
 
   sugerenciasKB = signal<ArticuloKB[]>([]);
   articuloSeleccionado = signal<ArticuloKB | null>(null);
+  buscando = signal(false);
+  busquedaRealizada = signal(false);
 
   prioridades = [
     { value: PrioridadTicket.ALTA,  label: 'Alta Prioridad',  dotClass: 'bg-red-500',   activeClass: 'border-red-300 bg-red-50' },
@@ -199,9 +210,22 @@ export class NuevoTicketComponent implements OnInit {
     ).subscribe(val => {
       const q = `${val.titulo || ''} ${val.descripcion || ''}`.trim();
       if (q.length > 5) {
-        this.kb.listar(q).subscribe(res => this.sugerenciasKB.set(res.slice(0, 3))); // Top 3
+        this.buscando.set(true);
+        this.kb.listar(q).subscribe({
+          next: (res) => {
+            this.sugerenciasKB.set(res.slice(0, 3)); // Top 3
+            this.busquedaRealizada.set(true);
+            this.buscando.set(false);
+          },
+          error: () => {
+            this.sugerenciasKB.set([]);
+            this.busquedaRealizada.set(true);
+            this.buscando.set(false);
+          }
+        });
       } else {
         this.sugerenciasKB.set([]);
+        this.busquedaRealizada.set(false);
       }
     });
   }

@@ -66,7 +66,6 @@ def crear_usuario(data: models.UsuarioCreate, db: Session = Depends(get_db),
             password_hash=hash_password(data.password),
             rol=data.rol,
             especialidad=data.especialidad,
-            extension=data.extension,
             id_departamento=data.id_departamento,
             id_area_tecnica=data.id_area_tecnica,
         )

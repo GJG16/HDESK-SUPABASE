@@ -35,6 +35,18 @@ class AreaTecnica(Base):
 
     tickets = relationship("Ticket", back_populates="area")
     tecnicos = relationship("Usuario", back_populates="area_tecnica")
+    palabras_clave = relationship("PalabraClaveTriaje", back_populates="area_tecnica", cascade="all, delete-orphan")
+
+
+class PalabraClaveTriaje(Base):
+    """Palabras clave dinámicas para el motor de triaje inteligente."""
+    __tablename__ = "tb_palabras_clave_triaje"
+
+    id = Column(Integer, primary_key=True, index=True)
+    palabra = Column(String(50), unique=True, nullable=False)
+    id_area_tecnica = Column(Integer, ForeignKey("areas_tecnicas.id", ondelete="CASCADE"), nullable=False)
+
+    area_tecnica = relationship("AreaTecnica", back_populates="palabras_clave")
 
 
 class Usuario(Base):
@@ -47,7 +59,6 @@ class Usuario(Base):
     password_hash = Column(String(255), nullable=False)
     rol = Column(String(50), nullable=False)
     especialidad = Column(String(100), nullable=True)
-    extension = Column(String(20), nullable=True)
 
     # Relaciones condicionales por rol
     id_departamento = Column(Integer, ForeignKey("tb_departamentos_negocio.id"), nullable=True)
@@ -235,6 +246,19 @@ class AreaResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+class PalabraClaveCreate(BaseModel):
+    palabra: str
+    id_area_tecnica: int
+
+class PalabraClaveResponse(BaseModel):
+    id: int
+    palabra: str
+    id_area_tecnica: int
+    nombre_area: Optional[str] = None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
 # ─── Usuarios ─────────────────────────────
 
 class UsuarioCreate(BaseModel):
@@ -244,7 +268,6 @@ class UsuarioCreate(BaseModel):
     password: str
     rol: str  # 'Operador', 'Tecnico', 'Administrador'
     especialidad: Optional[str] = None
-    extension: Optional[str] = None
     id_departamento: Optional[int] = None
     id_area_tecnica: Optional[int] = None
 
@@ -266,7 +289,6 @@ class UsuarioResponse(BaseModel):
     email: str
     rol: str
     especialidad: Optional[str] = None
-    extension: Optional[str] = None
     id_departamento: Optional[int] = None
     id_area_tecnica: Optional[int] = None
     nombre_departamento: Optional[str] = None

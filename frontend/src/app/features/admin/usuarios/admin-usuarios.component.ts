@@ -180,13 +180,6 @@ const ROL_CONFIG: Record<string, { label: string; class: string; bg: string }> =
           class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:border-[#2563EB] focus:ring-2 focus:ring-blue-100 transition-all"/>
       </div>
 
-      <!-- Campo condicional: Extensión (solo Operadores) -->
-      <div *ngIf="form.value.rol === 'Operador'">
-        <label class="block text-xs font-semibold text-slate-700 mb-1">Extensión telefónica</label>
-        <input formControlName="extension" type="text" placeholder="ej: 1042"
-          class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:border-[#2563EB] focus:ring-2 focus:ring-blue-100 transition-all"/>
-      </div>
-
       <!-- Error del backend -->
       <p *ngIf="errorMsg()" class="text-xs text-red-500 bg-red-50 rounded-lg px-3 py-2">{{ errorMsg() }}</p>
 
@@ -229,7 +222,6 @@ export class AdminUsuariosComponent implements OnInit {
     id_departamento: [null as number | null],
     id_area_tecnica: [null as number | null],
     especialidad:    [''],
-    extension:       [''],
   });
 
   get usuariosFiltrados() {
@@ -271,7 +263,6 @@ export class AdminUsuariosComponent implements OnInit {
       password: v.password!,
       rol: v.rol!,
       especialidad: v.especialidad || undefined,
-      extension: v.extension || undefined,
       id_departamento: v.id_departamento || undefined,
       id_area_tecnica: v.id_area_tecnica || undefined,
     };
