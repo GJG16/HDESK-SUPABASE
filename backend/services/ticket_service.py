@@ -2,7 +2,6 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func as sql_func
 from typing import Optional
 import html
-import asyncio
 from datetime import datetime, timezone
 
 import models

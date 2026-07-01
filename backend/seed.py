@@ -1,10 +1,8 @@
 import sys
 import io
-import time
 import bcrypt
 import models
 import database
-from sqlalchemy.orm import Session
 
 # Fix Windows console encoding for unicode characters
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
@@ -62,7 +60,6 @@ try:
                 email='operador@conectabpo.co',
                 password_hash=hash_password('oper123'),
                 rol='Operador',
-                extension='1042',
                 id_departamento=2,  # Ventas
             ),
             models.Usuario(
@@ -71,7 +68,6 @@ try:
                 email='sramirez@conectabpo.co',
                 password_hash=hash_password('oper123'),
                 rol='Operador',
-                extension='1055',
                 id_departamento=1,  # Marketing
             ),
             models.Usuario(
@@ -80,7 +76,6 @@ try:
                 email='pedro.op@conectabpo.co',
                 password_hash=hash_password('oper123'),
                 rol='Operador',
-                extension='1063',
                 id_departamento=3,  # ATC
             ),
             # Técnicos (con área técnica asignada)

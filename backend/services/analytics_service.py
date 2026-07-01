@@ -1,7 +1,7 @@
 import statistics
 from typing import Dict, Any
 from sqlalchemy.orm import Session
-from sqlalchemy import func, case, extract
+from sqlalchemy import func, case
 
 import models
 

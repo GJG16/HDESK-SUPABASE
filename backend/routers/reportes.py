@@ -1,7 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException
-# pyrefly: ignore [missing-import]
 from sqlalchemy.orm import Session
-from typing import Dict, Any
 
 import models
 from database import get_db

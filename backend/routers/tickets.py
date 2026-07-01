@@ -1,7 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
-# pyrefly: ignore [missing-import]
 from sqlalchemy.orm import Session
-# pyrefly: ignore [missing-import]
 from sqlalchemy import String
 from pydantic import BaseModel
 from typing import List, Optional
@@ -34,7 +32,7 @@ def _limpiar_cache_idempotencia():
         del idempotency_cache[k]
     # Si aún excede el tamaño máximo, eliminar las más antiguas
     if len(idempotency_cache) > IDEMPOTENCY_MAX_SIZE:
-        sorted_keys = sorted(idempotency_cache, key=idempotency_cache.get)
+        sorted_keys = sorted(idempotency_cache, key=lambda k: idempotency_cache.get(k, 0))
         for k in sorted_keys[:len(idempotency_cache) - IDEMPOTENCY_MAX_SIZE]:
             del idempotency_cache[k]
 
